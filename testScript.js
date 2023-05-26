@@ -1,13 +1,15 @@
 // import {Veri5Now} from './index';
 
 const Veri5Now  = require(".");
-
+const { v4: uuidv4 } = require("uuid");
 // const vl = Veri5Now();
 
 (async ()=>{
+    const secretId = uuidv4();
+    const productCode = "CRIB4U";
     
 console.log("Callling...")
-let v  = await Veri5Now.init("http://127.0.0.1:3010","CRIB4U",'52cabbbb-ec2f-4740-b2a4-eed73614ace6');
+let v  = await Veri5Now.init("http://127.0.0.1:3010",productCode,secretId);
 // console.log(v)
 // setTimeout(() => {
 // await Veri5Now.getLicenseAccessKey(async (d)=>{

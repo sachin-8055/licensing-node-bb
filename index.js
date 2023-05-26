@@ -48,7 +48,9 @@ const License = (() => {
     // let id = machineIdSync()
     // console.log({id})
 
-    secretId = clientSecret || uuidv4();
+    if (!secretId) {
+      secretId = clientSecret || uuidv4();
+    }
     platform = process?.platform || "";
 
     if (!fs.existsSync(`${baseDir}/veri5now/private.pem`)) {
@@ -306,9 +308,9 @@ const License = (() => {
   };
 
   /**
-   * 
-   * @param {String} licenseId 
-   * @param {Function} callback 
+   *
+   * @param {String} licenseId
+   * @param {Function} callback
    */
   const validateLicense = async (licenseId, callback) => {
     try {
