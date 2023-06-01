@@ -127,3 +127,4 @@ dist
 .pnp.*
 *.pem
 license/license
+testScript.js

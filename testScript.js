@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require("uuid");
     
 console.log("Callling...")
 let v  = await Veri5Now.init("http://127.0.0.1:3010",productCode,secretId);
+await Veri5Now.getMyConfig((d)=>console.log(d));
 // console.log(v)
 // setTimeout(() => {
 // await Veri5Now.getLicenseAccessKey(async (d)=>{

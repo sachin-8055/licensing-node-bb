@@ -27,7 +27,7 @@ const License = (() => {
   let baseUrl;
   let secretId;
   let platform;
-  let fingerprint;
+  let deviceId;
   let IPAddress = address.ip();
   let dateTime = new Date();
   let timeZone = moment.tz.guess();
@@ -42,7 +42,7 @@ const License = (() => {
     baseUrl = url;
     productCode = proCode;
     await machineId().then((id) => {
-      fingerprint = id;
+      deviceId = id;
     });
 
     // let id = machineIdSync()
@@ -69,11 +69,16 @@ const License = (() => {
     };
   };
 
+  /**
+   * 
+   * @param {Function} callback 
+   * @returns {Object} {}
+   */
   const getMyConfig = async (callback) => {
     let _data = {
       baseUrl,
       productCode,
-      fingerprint,
+      deviceId,
       secretId,
       IPAddress,
       dateTime,
@@ -163,6 +168,9 @@ const License = (() => {
         fullPublicKey = await getFormatedKey(fullPublicKey, "public");
       }
 
+      let _clientConfig = await getMyConfig();
+
+      let encrClientData = await aEsEncryption(secretId,JSON.stringify(_clientConfig))
       let encrSecret = await rsaEncryption(fullPublicKey, secretId);
 
       if (encrSecret?.message) {
@@ -176,7 +184,7 @@ const License = (() => {
 
       let clientKey = await getStringKey(fullClientKey);
 
-      let response_data = `${encrSecret?.data || "NA"}..${clientKey}`;
+      let response_data = `${encrSecret?.data || "NA"}..${clientKey}..${encrClientData}`;
 
       if ("function" == typeof callback) {
         callback(response_data);
@@ -377,6 +385,7 @@ const License = (() => {
       console.log("License Extract ERROR : ", error);
     }
   };
+
   return {
     init,
     getMyConfig,
