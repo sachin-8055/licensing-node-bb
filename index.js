@@ -10,7 +10,7 @@ var CryptoJS = require("crypto-js");
 let invalidResponse = {
   resultCode: -1,
   data: null,
-  message: "Invalid Request To License Server.",
+  message: "Something Went Wrong!",
 };
 
 const forgeKeyCreationOptions = {
@@ -21,8 +21,9 @@ const forgeKeyCreationOptions = {
 let baseDir = process.cwd();
 let serverKey = "server.pem";
 let clientKey = "client.pem";
-
+let LicenseFileDir = `${baseDir}/license`;
 const License = (() => {
+
   let productCode;
   let baseUrl;
   let secretId;
@@ -53,10 +54,11 @@ const License = (() => {
     }
     platform = process?.platform || "";
 
+    // console.log("INIT>>",{baseDir});
+    
     if (!fs.existsSync(`${baseDir}/veri5now/private.pem`)) {
       generateClientKeys();
     }
-
     // Immediate Connect to License Server to get Product Keys
     await connect();
 
@@ -90,6 +92,46 @@ const License = (() => {
     } else {
       return _data;
     }
+  };
+
+  /**
+   * 
+   * @param {Function} callback 
+   * @returns {Object} {}
+   */
+  const checkLicense = async (callback) => {
+    const _data = {...invalidResponse}
+    try{
+      
+      
+      if (!fs.existsSync(`${LicenseFileDir}/license`)) {
+
+        /** Need to upload License */
+        _data.resultCode = -1;
+        _data.message = "License Not Found."
+        _data.data="LICENSE_NOT_FOUND";
+
+      } else {
+
+        _data.resultCode = 1;
+        _data.message = "License Found.";
+
+        let extractedData = await extractLicense();
+
+        console.log({extractedData});
+      }
+
+      if ("function" == typeof callback) {
+        callback(_data);
+      } else {
+        return _data;
+      }
+
+    } catch(error){
+      console.log("CATCH : ",error);
+    }
+
+   
   };
 
   const connect = async () => {
@@ -158,6 +200,8 @@ const License = (() => {
    *
    */
   const getLicenseAccessKey = async (callback) => {
+      let _data = {...invalidResponse};
+      
     try {
       let fullPublicKey = fs.readFileSync(
         `${baseDir}/veri5now/${serverKey}`,
@@ -171,6 +215,13 @@ const License = (() => {
       let _clientConfig = await getMyConfig();
 
       let encrClientData = await aEsEncryption(secretId,JSON.stringify(_clientConfig))
+
+      if (encrClientData?.message) {
+        console.error("aEsEncryption Fail : " + encrClientData?.message);
+      }
+
+      // console.log({fullPublicKey});
+
       let encrSecret = await rsaEncryption(fullPublicKey, secretId);
 
       if (encrSecret?.message) {
@@ -184,12 +235,21 @@ const License = (() => {
 
       let clientKey = await getStringKey(fullClientKey);
 
-      let response_data = `${encrSecret?.data || "NA"}..${clientKey}..${encrClientData}`;
+      let response_data = `${encrSecret?.data || "NA"}..${clientKey}..${encrClientData?.data || "NA"}`;
+     
+      fs.writeFileSync(`${baseDir}/veri5now/temp_ecrypted.txt`, response_data, {
+        encoding: "utf-8",
+      })
+
+      _data.resultCode = 1;
+      _data.message = "Success";
+      _data.data = {localFilePath:`${baseDir}/veri5now/temp_ecrypted.txt`,
+    serverFileEndPoint:'/veri5now/temp_ecrypted.txt'};
 
       if ("function" == typeof callback) {
-        callback(response_data);
+        callback(_data);
       } else {
-        return response_data;
+        return _data;
       }
     } catch (error) {
       console.log("LICENSE Access KEY ERROR :", error);
@@ -255,12 +315,12 @@ const License = (() => {
           })
           .then((responseJson) => {
             if ("undefined" != typeof fs) {
-              let path = `${process.cwd()}/license`;
-              if (!fs.existsSync(path)) {
-                fs.mkdirSync(path, { recursive: true });
+              
+              if (!fs.existsSync(LicenseFileDir)) {
+                fs.mkdirSync(LicenseFileDir, { recursive: true });
               }
 
-              fs.writeFileSync(path + "/license", JSON.stringify(responseJson));
+              fs.writeFileSync(LicenseFileDir + "/license", JSON.stringify(responseJson));
             } else {
               if ("function" == typeof callback) {
                 callback(responseJson);
@@ -275,6 +335,44 @@ const License = (() => {
     }
   };
 
+  /**
+   * 
+   * @param {File} file 
+   * @param {Function} callback 
+   * @returns {Boolean} true | false
+   */
+  const uploadLicenseFile = async (file, callback) => {
+    try {
+      
+      let _data = {...invalidResponse};
+      if (!file) {
+        console.log("License Extract FILE NOT FOUND ");
+      }
+
+      if (!fs.existsSync(LicenseFileDir)) {
+        fs.mkdirSync(LicenseFileDir, { recursive: true });
+      }
+
+      
+      let fromUser = fs.readFileSync(file.path,
+        "utf-8"
+      );
+
+      fs.writeFileSync(`${LicenseFileDir}/license`, fromUser);     
+
+      _data.message="File Uploaded";
+      _data.resultCode = 1;
+
+      if ("function" == typeof callback) {
+        callback(_data);
+      } else {
+        return _data;
+      }
+    } catch (error) {
+      console.log("License Upload ERROR : ", error);
+      return false;
+    }
+  }
   /**
    *
    * @param {Function} callback
@@ -314,6 +412,7 @@ const License = (() => {
       console.log("License Extract ERROR : ", error);
     }
   };
+
 
   /**
    *
@@ -390,6 +489,8 @@ const License = (() => {
     init,
     getMyConfig,
     // connect,
+    checkLicense,
+    uploadLicenseFile,
     getLicenseByLicenseId,
     resyncServerCert,
     getLicenseAccessKey,
@@ -487,7 +588,7 @@ async function getFormatedKey(key, type) {
       return "Key or Type is empty";
     }
 
-    console.log({ len: key.length });
+    // console.log({ len: key.length });
     let i = 0;
     let tempFormatedData = "";
 
@@ -496,7 +597,7 @@ async function getFormatedKey(key, type) {
 
       i = i + 64;
 
-      console.log({ i });
+      // console.log({ i });
     } while (i <= key.length);
 
     if (type.toLowerCase() === "private") {
