@@ -23,7 +23,6 @@ let serverKey = "server.pem";
 let clientKey = "client.pem";
 let LicenseFileDir = `${baseDir}/license`;
 const License = (() => {
-
   let productCode;
   let baseUrl;
   let secretId;
@@ -55,7 +54,7 @@ const License = (() => {
     platform = process?.platform || "";
 
     // console.log("INIT>>",{baseDir});
-    
+
     if (!fs.existsSync(`${baseDir}/veri5now/private.pem`)) {
       generateClientKeys();
     }
@@ -72,8 +71,8 @@ const License = (() => {
   };
 
   /**
-   * 
-   * @param {Function} callback 
+   *
+   * @param {Function} callback
    * @returns {Object} {}
    */
   const getMyConfig = async (callback) => {
@@ -95,30 +94,49 @@ const License = (() => {
   };
 
   /**
-   * 
-   * @param {Function} callback 
+   *
+   * @param {Function} callback
    * @returns {Object} {}
    */
   const checkLicense = async (callback) => {
-    const _data = {...invalidResponse}
-    try{
-      
-      
+    const _data = { ...invalidResponse };
+    try {
       if (!fs.existsSync(`${LicenseFileDir}/license`)) {
-
         /** Need to upload License */
         _data.resultCode = -1;
-        _data.message = "License Not Found."
-        _data.data="LICENSE_NOT_FOUND";
-
+        _data.message = "License Not Found.";
+        _data.data = "LICENSE_NOT_FOUND";
       } else {
-
         _data.resultCode = 1;
         _data.message = "License Found.";
 
         let extractedData = await extractLicense();
 
-        console.log({extractedData});
+        // console.log({extractedData});
+
+        if (!extractedData) {
+          _data.resultCode = -1;
+          _data.message = "Extraction Error - Invalid License";
+        } else {
+          const isIssueBeforeOrToday = moment(currentDate).isSameOrAfter(
+            extractedData.meta?.issued
+          );
+          const isExpired = moment(currentDate).isAfter(
+            extractedData.meta?.expiry
+          );
+
+          if (!isIssueBeforeOrToday) {
+            /** If isIssueBeforeOrToday is false means issue date is future date, so STOP user */
+
+            _data.resultCode = -1;
+            _data.message = "Issue date invalid, License not active";
+          } else if (isExpired) {
+            /** If isExpired is true, so STOP user */
+
+            _data.resultCode = -1;
+            _data.message = "License is expired, please request new license.";
+          }
+        }
       }
 
       if ("function" == typeof callback) {
@@ -126,12 +144,9 @@ const License = (() => {
       } else {
         return _data;
       }
-
-    } catch(error){
-      console.log("CATCH : ",error);
+    } catch (error) {
+      console.log("CATCH : ", error);
     }
-
-   
   };
 
   const connect = async () => {
@@ -200,8 +215,8 @@ const License = (() => {
    *
    */
   const getLicenseAccessKey = async (callback) => {
-      let _data = {...invalidResponse};
-      
+    let _data = { ...invalidResponse };
+
     try {
       let fullPublicKey = fs.readFileSync(
         `${baseDir}/veri5now/${serverKey}`,
@@ -214,7 +229,10 @@ const License = (() => {
 
       let _clientConfig = await getMyConfig();
 
-      let encrClientData = await aEsEncryption(secretId,JSON.stringify(_clientConfig))
+      let encrClientData = await aEsEncryption(
+        secretId,
+        JSON.stringify(_clientConfig)
+      );
 
       if (encrClientData?.message) {
         console.error("aEsEncryption Fail : " + encrClientData?.message);
@@ -235,16 +253,20 @@ const License = (() => {
 
       let clientKey = await getStringKey(fullClientKey);
 
-      let response_data = `${encrSecret?.data || "NA"}..${clientKey}..${encrClientData?.data || "NA"}`;
-     
+      let response_data = `${encrSecret?.data || "NA"}..${clientKey}..${
+        encrClientData?.data || "NA"
+      }`;
+
       fs.writeFileSync(`${baseDir}/veri5now/temp_ecrypted.txt`, response_data, {
         encoding: "utf-8",
-      })
+      });
 
       _data.resultCode = 1;
       _data.message = "Success";
-      _data.data = {localFilePath:`${baseDir}/veri5now/temp_ecrypted.txt`,
-    serverFileEndPoint:'/veri5now/temp_ecrypted.txt'};
+      _data.data = {
+        localFilePath: `${baseDir}/veri5now/temp_ecrypted.txt`,
+        serverFileEndPoint: "/veri5now/temp_ecrypted.txt",
+      };
 
       if ("function" == typeof callback) {
         callback(_data);
@@ -315,12 +337,14 @@ const License = (() => {
           })
           .then((responseJson) => {
             if ("undefined" != typeof fs) {
-              
               if (!fs.existsSync(LicenseFileDir)) {
                 fs.mkdirSync(LicenseFileDir, { recursive: true });
               }
 
-              fs.writeFileSync(LicenseFileDir + "/license", JSON.stringify(responseJson));
+              fs.writeFileSync(
+                LicenseFileDir + "/license",
+                JSON.stringify(responseJson)
+              );
             } else {
               if ("function" == typeof callback) {
                 callback(responseJson);
@@ -336,15 +360,14 @@ const License = (() => {
   };
 
   /**
-   * 
-   * @param {File} file 
-   * @param {Function} callback 
+   *
+   * @param {File} file
+   * @param {Function} callback
    * @returns {Boolean} true | false
    */
   const uploadLicenseFile = async (file, callback) => {
     try {
-      
-      let _data = {...invalidResponse};
+      let _data = { ...invalidResponse };
       if (!file) {
         console.log("License Extract FILE NOT FOUND ");
       }
@@ -353,14 +376,11 @@ const License = (() => {
         fs.mkdirSync(LicenseFileDir, { recursive: true });
       }
 
-      
-      let fromUser = fs.readFileSync(file.path,
-        "utf-8"
-      );
+      let fromUser = fs.readFileSync(file.path, "utf-8");
 
-      fs.writeFileSync(`${LicenseFileDir}/license`, fromUser);     
+      fs.writeFileSync(`${LicenseFileDir}/license`, fromUser);
 
-      _data.message="File Uploaded";
+      _data.message = "File Uploaded";
       _data.resultCode = 1;
 
       if ("function" == typeof callback) {
@@ -372,7 +392,7 @@ const License = (() => {
       console.log("License Upload ERROR : ", error);
       return false;
     }
-  }
+  };
   /**
    *
    * @param {Function} callback
@@ -412,7 +432,6 @@ const License = (() => {
       console.log("License Extract ERROR : ", error);
     }
   };
-
 
   /**
    *
@@ -663,9 +682,9 @@ async function aEsEncryption(secretKey, data) {
 
       resolve({ data: encrypted.toString() });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       reject(error);
-      // throw new Error(error);
+      throw new Error(error);
     }
   });
 }
@@ -703,9 +722,9 @@ async function rsaEncryption(publicKey, dataToEncrypt) {
         resolve({ message: "No Self Certificate Key Available To Decrypt" });
       }
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       reject(error);
-      // throw new Error(error);
+      throw new Error(error);
     }
   });
 }
@@ -735,9 +754,9 @@ async function aEsDecryption(SecretKey, encryptedData) {
         resolve({ data: originalData });
       }
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       reject(error);
-      // throw new Error(error);
+      throw new Error(error);
     }
   });
 }
@@ -764,9 +783,9 @@ async function rsaDecryption(privateKey, dataToDecrypt) {
         resolve({ message: "No Self Certificate Key Available To Decrypt" });
       }
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       reject(error);
-      // throw new Error(error);
+      throw new Error(error);
     }
   });
 }
