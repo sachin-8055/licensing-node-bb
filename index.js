@@ -118,6 +118,9 @@ const License = (() => {
           _data.resultCode = -1;
           _data.message = "Extraction Error - Invalid License";
         } else {
+          
+          const currentDate = moment();
+
           const isIssueBeforeOrToday = moment(currentDate).isSameOrAfter(
             extractedData.meta?.issued
           );
