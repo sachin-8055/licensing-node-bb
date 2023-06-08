@@ -5,11 +5,11 @@
 ```
 const Veri5Now  = require('licensing-node-bb');
 
-await Veri5Now.init("http://127.0.0.1:3010",productCode,secretId);
+await Veri5Now.init("https://veri5now.axiomprotect.com:3011",productCode,secretId);
 
 ```
 
-#### At the time of initialization 'Product Code' is required, This product code is auto generated code from Veri5Now when you add any new product. [Veri5Now](https://103.76.249.54:5677/sign-in)
+#### At the time of initialization 'Product Code' is required, This product code is auto generated code from Veri5Now when you add any new product. [Veri5Now](https://https://veri5now.axiomprotect.com:5677/sign-in)
 
 #### - When it load it will take your system info for security purpose and for License purpose.
 
@@ -24,8 +24,8 @@ await Veri5Now.init("http://127.0.0.1:3010",productCode,secretId);
 | -------------------                             |--------------------                    |
 | `Veri5Now.getLicenseAccessKey(callback())`       | Generate License Access Key.                | 
 | `Veri5Now.getLicenseByAccessKey(LicenseAccessKey,callback())`| Get License (file) using Access Key.     | 
-| `Veri5Now.validateLicense(licenseId,callback())`  | Validate License Expire or Active.     | 
-| `Veri5Now.extractLicense(callback())`  | Extract License Details.      |
+| `Veri5Now.getLicenseDetails(callback())`  | It will auto extract your license file and return your detail info of license and package.     | 
+| `Veri5Now.uploadLicenseFile(callback())`  | Upload License file (after activation user will recive mail to download file).      |
 
 | Response Key | Key Type | Response Data | 
 |----- |------ |------ |

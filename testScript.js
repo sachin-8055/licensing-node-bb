@@ -2,6 +2,7 @@
 
 // const Veri5Now  = require("./");
 const { v4: uuidv4 } = require("uuid");
+const Veri5Now = require("./dist");
 // const vl = Veri5Now();
 
 (async ()=>{
