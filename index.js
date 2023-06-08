@@ -557,6 +557,7 @@ const License = (() => {
   };
 })();
 
+
 async function getProductCertificateKeyFromServer(baseUrl, productCode) {
   try {
     fetch(`${baseUrl}/license/api/getCertificateKey/${productCode}`, {
