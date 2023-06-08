@@ -1,6 +1,6 @@
 // import {Veri5Now} from './index';
 
-const Veri5Now  = require(".");
+// const Veri5Now  = require("./");
 const { v4: uuidv4 } = require("uuid");
 // const vl = Veri5Now();
 

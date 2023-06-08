@@ -152,6 +152,40 @@ const License = (() => {
     }
   };
 
+  
+  /**
+   *
+   * @param {Function} callback
+   * @returns {Object} {}
+   */
+  const getLicenseDetails = async (callback) => {
+    let _data = { ...invalidResponse };
+    try {
+
+        const licCheckResponse = await checkLicense();
+
+        if(licCheckResponse?.resultCode == 1){
+         
+        let extractedData = await extractLicense();
+
+        _data = licCheckResponse
+        _data.data = extractedData;
+
+        } else {
+          _data = licCheckResponse
+        }
+      
+    
+      if ("function" == typeof callback) {
+        callback(_data);
+      } else {
+        return _data;
+      }
+    } catch (error) {
+      console.log("CATCH : ", error);
+    }
+  };
+
   const connect = async () => {
     console.log("Connecting...");
     try {
@@ -513,12 +547,13 @@ const License = (() => {
     // connect,
     checkLicense,
     uploadLicenseFile,
-    getLicenseByLicenseId,
     resyncServerCert,
     getLicenseAccessKey,
-    getLicenseByAccessKey,
     extractLicense,
-    validateLicense,
+    getLicenseDetails,
+    // getLicenseByLicenseId,
+    // getLicenseByAccessKey,
+    // validateLicense,
   };
 })();
 
