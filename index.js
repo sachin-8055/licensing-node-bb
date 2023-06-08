@@ -6,6 +6,7 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 const forge = require("node-forge");
 var CryptoJS = require("crypto-js");
+const https = require('https');
 
 let invalidResponse = {
   resultCode: -1,
@@ -22,6 +23,8 @@ let baseDir = process.cwd();
 let serverKey = "server.pem";
 let clientKey = "client.pem";
 let LicenseFileDir = `${baseDir}/license`;
+let httpsAgent = new https.Agent({ rejectUnauthorized: false });
+
 const License = (() => {
   let productCode;
   let baseUrl;
@@ -217,6 +220,7 @@ const License = (() => {
     try {
       await fetch(`${baseUrl}/license/api/retrieve/${licenceId}`, {
         method: "GET",
+        agent: httpsAgent,
       })
         .then((res) => {
           const isJson = res.headers
@@ -342,6 +346,7 @@ const License = (() => {
           `${baseUrl}/license/api/getLicenseFile/${productCode}/${licenseId}`,
           {
             method: "POST",
+            agent: httpsAgent,
             headers: {
               "Content-Type": "application/json",
               "X-User-Certificate": encrClientDevice.data,
@@ -502,6 +507,7 @@ const License = (() => {
         `${baseUrl}/license/api/validateClientLicense/${productCode}`,
         {
           method: "POST",
+          agent: httpsAgent,
           headers: _headers,
           body: json_body_string,
         }
@@ -562,6 +568,7 @@ async function getProductCertificateKeyFromServer(baseUrl, productCode) {
   try {
     fetch(`${baseUrl}/license/api/getCertificateKey/${productCode}`, {
       method: "GET",
+      agent: httpsAgent,
       // headers: {
       //   "Content-Type": "application/json",
       //   "X-User-Certificate":encrClientDevice
