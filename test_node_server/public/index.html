@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+    <link rel="stylesheet" href="./css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 
 <body>
@@ -17,21 +19,18 @@
         <!-- TOP Navigation -->
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="#">Navbar</a>
             <!-- Just an image -->
             <nav class="navbar navbar-light bg-light">
                 <a class="navbar-brand" href="#">
-                    <img src="/docs/4.3/assets/brand/bootstrap-solid.svg" width="30" height="30" alt="">
+                    <!-- <img src="./assets/GC.png" width="30" height="30" alt=""> -->
                 </a>
             </nav>
+            <a class="navbar-brand" href="#">License Test</a>
 
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav mr-auto">
                     <li class="nav-item active">
-                        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Link</a>
+                        <a class="nav-link" href="#">Home</a>
                     </li>
 
                 </ul>
@@ -42,7 +41,113 @@
 
     <div>
         <!-- BODY Part -->
+        <div class="container-bg">
+            <div class="container-fluid">
 
+                <div class="row">
+                    <div class="col col-md-5">
+
+                        <div class="col col-md-11 collapse show bg-light pt-2 px-2 " id="sidebar">
+                            <ul class="nav flex-column flex-nowrap overflow-hidden">
+                                <li class="nav-item">
+                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu1" data-toggle="collapse"
+                                        data-target="#submenu1"><i class="fa fa-table"></i> <span
+                                            class="d-none d-sm-inline font-weight-bold" style="font-size: 1.2rem;">New License</span></a>
+                                    <div class="collapse m-3" id="submenu1" aria-expanded="false">
+                                        <ul class="flex-column pl-2 nav">
+                                            <a type="button" id="get_new_btn" class="btn btn-outline-primary btn-lg"
+                                                href="http://127.0.0.1:5678/licenseRequest" target="_blank">Get New
+                                                !</a>
+
+                                        </ul>
+                                    </div>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu2" data-toggle="collapse"
+                                        data-target="#submenu2"><i class="fa fa-table"></i> <span
+                                            class="d-none d-sm-inline font-weight-bold" style="font-size: 1.2rem;">Upload New License</span></a>
+                                    <div class="collapse m-3" id="submenu2" aria-expanded="false">
+                                        <ul class="flex-column pl-2 nav">
+                                            <div class="input-group col">
+                                                <div class="custom-file">
+                                                    <input type="file" class="custom-file-input"
+                                                        id="license_file_upload">
+                                                    <label class="custom-file-label" id="selected_file_name"
+                                                        for="license_file_upload">Choose file</label>
+                                                </div>
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-outline-primary" id="upload_new_btn"
+                                                        type="button">Upload
+                                                        File</button>
+                                                </div>
+                                            </div>
+                                        </ul>
+                                    </div>
+                                </li>
+
+
+                                <li class="nav-item">
+                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu3" data-toggle="collapse"
+                                        data-target="#submenu3"><i class="fa fa-table"></i> <span
+                                            class="d-none d-sm-inline font-weight-bold" style="font-size: 1.2rem;">Other</span></a>
+                                    <div class="collapse m-3" id="submenu3" aria-expanded="false">
+                                        <ul class="d-inline flex-column flex-nowrap  pl-2 nav">
+                                           <button class="btn btn-outline-info" type="button" id="get_device_info_btn">Device Info</button>
+                                           <button class="btn btn-outline-info" type="button" id="#">Action 2</button>
+                                            <pre id="json_result"></pre>
+                                        </ul>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                    </div>
+                    <div class="col">
+
+
+                        <h5 class="text-center"> Your License</h5>
+                        <!-- your content -->
+                        <div class="d-flex flex-wrap justify-content-center">
+                            <div class="card border-success m-3 w-75">
+                                <div class="card-header">
+                                    <img src="./assets/Clean coin.png" width="40" height="40" alt=""> License
+
+                                    <a href="#" class="btn btn-info ml-3">Check Valid?</a> |
+                                    <a href="#" class="btn btn-primary ml-2">Renew?</a>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title text-success">Basic Details</h5>
+                                    <span class="card-text mb-1">Product: <b>ABC</b></span> |
+                                    <span class="card-text mb-1">Package: <b>ABC</b></span> |
+                                    <span class="card-text mb-1">Validity: <b>0 Day(s) </b></span> |
+                                    <span class="card-text mb-1">Price: <b>$0.0</b></span>
+                                    <hr>
+                                    <h5 class="card-title text-primary">Issure Details</h5>
+                                    <span class="card-text mb-1">Company: <b>XYZ</b></span> |
+                                    <span class="card-text mb-1">Issuer: <b>XYZ</b></span> |
+                                    <span class="card-text mb-1">Email: <b>XYZ</b></span> |
+                                    <span class="card-text mb-1">Contact: <b>XYZ</b></span>
+                                    <hr>
+
+                                    <h6 class="card-title text-danger">Validity Details</h6>
+                                    <span class="card-text mb-1">Issued On: <b>31/12/2000</b></span> |
+                                    <span class="card-text mb-1">Expired On: <b>31/12/2000</b></span>
+
+                                </div>
+                            </div>
+
+
+
+                        </div>
+                        <h5 class="text-center"> No License Found, Please upload the license.</h5>
+
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </div>
 
     <div>
@@ -58,6 +163,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"
         integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
         crossorigin="anonymous"></script>
+
+
+    <script src="./js/script.index.js"></script>
 
 </body>
 
