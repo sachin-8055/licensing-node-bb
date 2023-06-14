@@ -1,0 +1,10 @@
+# .npmignore
+
+
+# Dependency directories
+node_modules/
+.gitignore
+.gitattributes
+veri5now
+public
+test_node_server/

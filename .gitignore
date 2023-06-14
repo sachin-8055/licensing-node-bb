@@ -1,3 +1,4 @@
+# .gitignore
 # Logs
 logs
 *.log
@@ -127,4 +128,3 @@ out
 .pnp.*
 *.pem
 license/license
-testScript.js
