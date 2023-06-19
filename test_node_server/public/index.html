@@ -50,13 +50,22 @@
                         <div class="col col-md-11 collapse show bg-light pt-2 px-2 " id="sidebar">
                             <ul class="nav flex-column flex-nowrap overflow-hidden">
                                 <li class="nav-item">
-                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu1" data-toggle="collapse"
-                                        data-target="#submenu1"><i class="fa fa-table"></i> <span
-                                            class="d-none d-sm-inline font-weight-bold" style="font-size: 1.2rem;">New License</span></a>
+                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu1"
+                                        data-toggle="collapse" data-target="#submenu1"><i class="fa fa-table"></i> <span
+                                            class="d-none d-sm-inline font-weight-bold" style="font-size: 1.2rem;">New
+                                            License</span></a>
                                     <div class="collapse m-3" id="submenu1" aria-expanded="false">
-                                        <ul class="flex-column pl-2 nav">
-                                            <a type="button" id="get_new_btn" class="btn btn-outline-primary btn-lg"
-                                                href="http://127.0.0.1:5678/licenseRequest" target="_blank">Get New
+                                        <ul class="d-inline-flex-column pl-2  nav">
+                                            <select class="form-select form-select-lg my-2 mx-1" id="productList" onchange="reInitialize()">
+
+                                            </select>
+                                            <a type="button" id="get_new_btn" onclick="getNewLicenseKey()"
+                                                class=" my-2 mx-1 btn btn-outline-primary btn-lg w-50">Get Key File
+                                                !</a>
+                                            <a type="button" id="get_new_btn"
+                                                class=" my-2 mx-1 btn btn-outline-primary btn-lg  w-50"
+                                                href="http://127.0.0.1:5678/licenseRequest" target="_blank">Request New
+                                                License
                                                 !</a>
 
                                         </ul>
@@ -64,9 +73,10 @@
                                 </li>
 
                                 <li class="nav-item">
-                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu2" data-toggle="collapse"
-                                        data-target="#submenu2"><i class="fa fa-table"></i> <span
-                                            class="d-none d-sm-inline font-weight-bold" style="font-size: 1.2rem;">Upload New License</span></a>
+                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu2"
+                                        data-toggle="collapse" data-target="#submenu2"><i class="fa fa-table"></i> <span
+                                            class="d-none d-sm-inline font-weight-bold"
+                                            style="font-size: 1.2rem;">Upload New License</span></a>
                                     <div class="collapse m-3" id="submenu2" aria-expanded="false">
                                         <ul class="flex-column pl-2 nav">
                                             <div class="input-group col">
@@ -88,14 +98,16 @@
 
 
                                 <li class="nav-item">
-                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu3" data-toggle="collapse"
-                                        data-target="#submenu3"><i class="fa fa-table"></i> <span
-                                            class="d-none d-sm-inline font-weight-bold" style="font-size: 1.2rem;">Other</span></a>
+                                    <a class="nav-link collapsed text-truncate mt-2" href="#submenu3"
+                                        data-toggle="collapse" data-target="#submenu3"><i class="fa fa-table"></i> <span
+                                            class="d-none d-sm-inline font-weight-bold"
+                                            style="font-size: 1.2rem;">Other</span></a>
                                     <div class="collapse m-3" id="submenu3" aria-expanded="false">
                                         <ul class="d-inline flex-column flex-nowrap  pl-2 nav">
-                                           <button class="btn btn-outline-info" type="button" id="get_device_info_btn">Device Info</button>
-                                           <button class="btn btn-outline-info" type="button" id="#">Action 2</button>
-                                            <pre id="json_result"></pre>
+                                            <button class="btn btn-outline-info" type="button"
+                                                id="get_device_info_btn">Device Info</button>
+                                            <button class="btn btn-outline-info" type="button" id="#">Action 2</button>
+                                            <!-- <pre id="json_result"></pre> -->
                                         </ul>
                                     </div>
                                 </li>
@@ -105,43 +117,36 @@
                     </div>
                     <div class="col">
 
-
-                        <h5 class="text-center"> Your License</h5>
-                        <!-- your content -->
-                        <div class="d-flex flex-wrap justify-content-center">
-                            <div class="card border-success m-3 w-75">
-                                <div class="card-header">
-                                    <img src="./assets/Clean coin.png" width="40" height="40" alt=""> License
-
-                                    <a href="#" class="btn btn-info ml-3">Check Valid?</a> |
-                                    <a href="#" class="btn btn-primary ml-2">Renew?</a>
-                                </div>
-                                <div class="card-body">
-                                    <h5 class="card-title text-success">Basic Details</h5>
-                                    <span class="card-text mb-1">Product: <b>ABC</b></span> |
-                                    <span class="card-text mb-1">Package: <b>ABC</b></span> |
-                                    <span class="card-text mb-1">Validity: <b>0 Day(s) </b></span> |
-                                    <span class="card-text mb-1">Price: <b>$0.0</b></span>
-                                    <hr>
-                                    <h5 class="card-title text-primary">Issure Details</h5>
-                                    <span class="card-text mb-1">Company: <b>XYZ</b></span> |
-                                    <span class="card-text mb-1">Issuer: <b>XYZ</b></span> |
-                                    <span class="card-text mb-1">Email: <b>XYZ</b></span> |
-                                    <span class="card-text mb-1">Contact: <b>XYZ</b></span>
-                                    <hr>
-
-                                    <h6 class="card-title text-danger">Validity Details</h6>
-                                    <span class="card-text mb-1">Issued On: <b>31/12/2000</b></span> |
-                                    <span class="card-text mb-1">Expired On: <b>31/12/2000</b></span>
-
+                        
+                        <div class="row justify-content-center">
+                            <div class="col bg-light">
+                                <div class="card border-danger m-3 w-75" id="res_card"
+                                    style="display: none;max-width: 683px;">
+                                    <div class="card-header">
+                                        <img src="./assets/ERROR.png" width="40" height="40" alt="" id="res_img"
+                                            class="mr-3"> <span id="res_cardName">ERROR</span>
+                                    </div>
+                                    <div class="card-body">
+                                        Data : <p id="res_data"></p>
+                                        <hr />
+                                        Message: <p id="res_msg"></p>
+                                        <hr />
+                                        <pre id="res_obj" style="max-height: 300px;"></pre>
+                                    </div>
                                 </div>
                             </div>
-
-
-
                         </div>
-                        <h5 class="text-center"> No License Found, Please upload the license.</h5>
 
+
+                        <h5 class="text-center"> Your License
+                            <button class="btn btn-outline-info btn-sm m-3" onclick="getLicenseDetails()">View
+                                License</button>
+                        </h5>
+                        <!-- your content -->
+                        <div class="d-flex flex-wrap justify-content-center" id="licenseCardView">
+                           
+                        </div>
+                        <h5 class="text-center" id="No_licenseCardView"> No License Found, Please upload the license.</h5>
 
                     </div>
                 </div>

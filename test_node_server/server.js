@@ -18,6 +18,8 @@ Veri5Now.init(process.env.LICENSE_SERVER_BASE_URL,process.env.LICENSE_PRODUCT_CO
 
 app.use("/", express.static("public"));
 
+app.use("/veri5now/", express.static("veri5now"));
+
 app.use("/api",licenseRouting);
 
 const PORT = process.env.PORT;

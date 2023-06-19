@@ -31,24 +31,30 @@ router.get("/", async (req, res, next) => {
 });
 
 router.get("/getListProduct", async (req, res, next) => {
+  console.log(" >>> getListProduct calling")
     try {
-        
-      res.status(200).json({ dat: "Routeing accessible..." });
+      Veri5Now.getProductList((e) => {
+        console.log({e})
+          return res.status(200).json(e);
+        }).catch((err) => {
+          console.log(":: CATCH :: ", err);
+        });
     } catch (error) {
       next(error);
     }
   });
 
   
-router.post("/reinitialize", async (req, res, next) => {
+router.get("/reinitialize/:proCode", async (req, res, next) => {
   try {
-    const { proCode } = req.body;
+    const { proCode } = req.params;
     if (proCode) {
-      Veri5Now.init(
+      let e = await Veri5Now.init(
         process.env.LICENSE_SERVER_BASE_URL,
         proCode,
         process.env.LICENSE_DEFAULT_SECRET
       );
+      return res.status(200).json(e);
     } else {
       res.status(200).json({ dat: "Product Code not found..." });
     }
@@ -69,5 +75,49 @@ router.get("/getMyConfig", async (req, res, next) => {
     next(error);
   }
 });
+
+router.get("/getKeyFil", async (req, res, next) => {
+  try {
+    Veri5Now.getLicenseAccessKey(async (result) => {
+      console.log(result);
+      let _res = { ...result };
+      _res.data.serverFileEndPoint = `${process.env.ServerUrl}${_res.data.serverFileEndPoint}`;
+
+      return res.status(200).json(_res);
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post(
+  "/uploadLicenseFile",
+  upload.single("license"),
+  async (req, res, next) => {
+    try {
+      console.log("*** Uploading License ***");
+      Veri5Now.uploadLicenseFile(req.file, async (result) => {
+        console.log(result);
+
+        return res.status(200).json(result);
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get("/gtLicenseDetails", async (req, res, next) => {
+  try {
+    console.log("*** Details of License ***");
+    Veri5Now.getLicenseDetails((result) => {
+      // console.log(result);
+      res.status(200).json(result);
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 module.exports = router;

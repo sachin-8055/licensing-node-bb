@@ -1,0 +1,9 @@
+{
+  "baseUrl": "http://localhost:3010",
+  "productCode": "CRIB4U",
+  "deviceId": "47c40abc51bae1abd82944ac7355b3159132863408b0112ff2fdb504f63d8e88",
+  "secretId": "388u230n4s9z8742398u5xdmyjhr58xct4894u7",
+  "IPAddress": "192.168.245.48",
+  "dateTime": "2023-06-19T09:43:22.291Z",
+  "timeZone": "Asia/Calcutta"
+}

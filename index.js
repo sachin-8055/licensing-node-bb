@@ -547,6 +547,58 @@ const License = (() => {
     }
   };
 
+  
+  /**
+   *
+   * @param {Function} callback
+   */
+  const getProductList = async (callback) => {
+    try {
+
+      var _headers = {
+        "Content-Type": "application/json",
+      };
+
+      await fetch(
+        `${baseUrl}/license/api/getProductList`,
+        {
+          method: "get",
+          agent: httpsAgent,
+          headers: _headers,
+        }
+      )
+        .then((res) => {
+          const isJson = res.headers
+            .get("content-type")
+            ?.includes("application/json");
+
+            console.log({isJson,res});
+            
+          if (isJson) {
+            return res.json();
+          } else {
+            invalidResponse.data =
+              `${res?.status} - ${res?.statusText}` || null;
+            return invalidResponse;
+          }
+        })
+        .then((responseJson) => {
+          console.log({responseJson})
+          if ("function" == typeof callback) {
+            callback(responseJson);
+          } else {
+            return responseJson;
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } catch (error) {
+      console.log("License Extract ERROR : ", error);
+    }
+  };
+
+  
   return {
     init,
     getMyConfig,
@@ -557,6 +609,7 @@ const License = (() => {
     getLicenseAccessKey,
     extractLicense,
     getLicenseDetails,
+    getProductList,
     // getLicenseByLicenseId,
     // getLicenseByAccessKey,
     // validateLicense,

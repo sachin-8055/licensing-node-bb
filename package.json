@@ -16,7 +16,10 @@
     "BlueBricks",
     "Licensing",
     "Licensing node"
-  ],
+  ],  
+  "nodemonConfig": {
+    "ignore": ["*.json"]
+  },
   "author": "sachin-8055",
   "license": "ISC",
   "bugs": {
