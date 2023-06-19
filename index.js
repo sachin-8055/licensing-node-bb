@@ -6,7 +6,7 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 const forge = require("node-forge");
 var CryptoJS = require("crypto-js");
-const https = require('https');
+const https = require("https");
 
 let invalidResponse = {
   resultCode: -1,
@@ -20,11 +20,56 @@ const forgeKeyCreationOptions = {
 };
 
 let baseDir = process.cwd();
+let infoTracerFile = "infoTrace.json";
 let serverKey = "server.pem";
 let clientKey = "client.pem";
 let LicenseFileDir = `${baseDir}/license`;
-let httpsAgent = new https.Agent({ rejectUnauthorized: false });
+// let httpsAgent = new https.Agent({ rejectUnauthorized: false });
+let httpsAgent = null;
 
+const updateTrace = async (JsonData) => {
+  if (fs) {
+    let filePath = `${baseDir}/veri5now`;
+
+    if (!fs.existsSync(filePath)) {
+      fs.mkdirSync(filePath, { recursive: true });
+    }
+
+    let oldTrace = await getTrace();
+
+    if (oldTrace && oldTrace != null && JsonData) {
+      let newTraceData = { ...oldTrace, ...JsonData };
+
+      fs.writeFileSync(
+        `${filePath}/${infoTracerFile}`,
+        JSON.stringify(newTraceData, null, 2)
+      );
+    } else if (!oldTrace && JsonData) {
+      fs.writeFileSync(
+        `${filePath}/${infoTracerFile}`,
+        JSON.stringify(JsonData, null, 2)
+      );
+    }
+  }
+};
+
+const getTrace = async () => {
+  if (fs) {
+    let filePath = `${baseDir}/veri5now`;
+    if (fs.existsSync(`${filePath}/${infoTracerFile}`)) {
+      let traceFileData = fs.readFileSync(
+        `${filePath}/${infoTracerFile}`,
+        "utf-8"
+      );
+
+      if (traceFileData) {
+        return JSON.parse(traceFileData);
+      }
+    }
+
+    return null;
+  }
+};
 const License = (() => {
   let productCode;
   let baseUrl;
@@ -121,7 +166,6 @@ const License = (() => {
           _data.resultCode = -1;
           _data.message = "Extraction Error - Invalid License";
         } else {
-          
           const currentDate = moment();
 
           const isIssueBeforeOrToday = moment(currentDate).isSameOrAfter(
@@ -155,7 +199,6 @@ const License = (() => {
     }
   };
 
-  
   /**
    *
    * @param {Function} callback
@@ -164,21 +207,17 @@ const License = (() => {
   const getLicenseDetails = async (callback) => {
     let _data = { ...invalidResponse };
     try {
+      const licCheckResponse = await checkLicense();
 
-        const licCheckResponse = await checkLicense();
-
-        if(licCheckResponse?.resultCode == 1){
-         
+      if (licCheckResponse?.resultCode == 1) {
         let extractedData = await extractLicense();
 
-        _data = licCheckResponse
+        _data = licCheckResponse;
         _data.data = extractedData;
+      } else {
+        _data = licCheckResponse;
+      }
 
-        } else {
-          _data = licCheckResponse
-        }
-      
-    
       if ("function" == typeof callback) {
         callback(_data);
       } else {
@@ -195,9 +234,16 @@ const License = (() => {
       if (!fs.existsSync(`${baseDir}/veri5now/${serverKey}`)) {
         await getProductCertificateKeyFromServer(baseUrl, productCode);
       } else {
-        console.log(
-          "Product Cert Present, to resync call 'Veri5Now.resyncServerCert()'"
-        );
+        let oldTrace = await getTrace();
+        if (oldTrace?.productCode != productCode) {
+          resyncServerCert();
+
+          console.log("Updating Product Cert....");
+        } else {
+          console.log(
+            "Product Cert Present, to resync call 'Veri5Now.resyncServerCert()'"
+          );
+        }
       }
     } catch (error) {
       console.error("CONNECT ERROR : ", error);
@@ -206,7 +252,7 @@ const License = (() => {
 
   const resyncServerCert = async () => {
     try {
-      getProductCertificateKeyFromServer(baseUrl, productCode);
+      await getProductCertificateKeyFromServer(baseUrl, productCode);
     } catch (error) {
       console.error("Resync Serv. Cert. ERROR : ", error);
     }
@@ -547,33 +593,28 @@ const License = (() => {
     }
   };
 
-  
   /**
    *
    * @param {Function} callback
    */
   const getProductList = async (callback) => {
     try {
-
       var _headers = {
         "Content-Type": "application/json",
       };
 
-      await fetch(
-        `${baseUrl}/license/api/getProductList`,
-        {
-          method: "get",
-          agent: httpsAgent,
-          headers: _headers,
-        }
-      )
+      await fetch(`${baseUrl}/license/api/getProductList`, {
+        method: "get",
+        agent: httpsAgent,
+        headers: _headers,
+      })
         .then((res) => {
           const isJson = res.headers
             .get("content-type")
             ?.includes("application/json");
 
-            console.log({isJson,res});
-            
+          console.log({ isJson, res });
+
           if (isJson) {
             return res.json();
           } else {
@@ -583,7 +624,7 @@ const License = (() => {
           }
         })
         .then((responseJson) => {
-          console.log({responseJson})
+          console.log({ responseJson });
           if ("function" == typeof callback) {
             callback(responseJson);
           } else {
@@ -598,7 +639,6 @@ const License = (() => {
     }
   };
 
-  
   return {
     init,
     getMyConfig,
@@ -615,7 +655,6 @@ const License = (() => {
     // validateLicense,
   };
 })();
-
 
 async function getProductCertificateKeyFromServer(baseUrl, productCode) {
   try {
@@ -658,6 +697,8 @@ async function getProductCertificateKeyFromServer(baseUrl, productCode) {
           return true;
         }
       });
+
+    updateTrace({ productCode, dateTime: new Date() });
   } catch (error) {
     console.error("CONNECT ERROR : ", error);
   }
