@@ -3,6 +3,8 @@
 
 #### Import Package and Initialize it.
 ```
+$ npm i licensing-node-bb@latest
+
 const Veri5Now  = require('licensing-node-bb');
 
 await Veri5Now.init("https://veri5now.axiomprotect.com:3011",productCode,secretId);
