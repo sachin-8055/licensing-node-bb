@@ -579,6 +579,7 @@ const License = (() => {
           }
         })
         .then((responseJson) => {
+          // console.log({responseJson})
           if ("function" == typeof callback) {
             callback(responseJson);
           } else {
@@ -613,8 +614,6 @@ const License = (() => {
             .get("content-type")
             ?.includes("application/json");
 
-          console.log({ isJson, res });
-
           if (isJson) {
             return res.json();
           } else {
@@ -624,7 +623,7 @@ const License = (() => {
           }
         })
         .then((responseJson) => {
-          console.log({ responseJson });
+          // console.log({ responseJson });
           if ("function" == typeof callback) {
             callback(responseJson);
           } else {
@@ -652,7 +651,7 @@ const License = (() => {
     getProductList,
     // getLicenseByLicenseId,
     // getLicenseByAccessKey,
-    // validateLicense,
+    validateLicense,
   };
 })();
 

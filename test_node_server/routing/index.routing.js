@@ -1,7 +1,6 @@
 const multer = require("multer");
 const fs = require("fs");
 const Veri5Now = require("licensing-node-bb");
-
 const router = require("express").Router();
 
 var storage = multer.diskStorage({
@@ -31,10 +30,10 @@ router.get("/", async (req, res, next) => {
 });
 
 router.get("/getListProduct", async (req, res, next) => {
-  console.log(" >>> getListProduct calling")
+  // console.log(" >>> getListProduct calling")
     try {
       Veri5Now.getProductList((e) => {
-        console.log({e})
+        // console.log({e})
           return res.status(200).json(e);
         }).catch((err) => {
           console.log(":: CATCH :: ", err);
@@ -119,5 +118,16 @@ router.get("/gtLicenseDetails", async (req, res, next) => {
   }
 });
 
+router.get("/validateLicense/:licenceId", async (req, res, next) => {
+  try {
+    console.log("*** Details of License ***");
+    Veri5Now.validateLicense(req.params?.licenceId,(result) => {
+      // console.log(result);
+      res.status(200).json(result);
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;

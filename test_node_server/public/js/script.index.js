@@ -13,6 +13,8 @@ const resData = document.getElementById("res_data");
 const resMsg = document.getElementById("res_msg");
 const resObj = document.getElementById("res_obj");
 
+let licenceId = "";
+
 document.addEventListener("DOMContentLoaded", function (event) {
   if (axios) {
     getProductsList();
@@ -87,7 +89,19 @@ fileInput.addEventListener("change", (event) => {
   files = event.target.files;
 
   if (files && files.length == 1) {
-    document.getElementById("selected_file_name").innerHTML = files[0].name;
+    
+    const fName = files[0]?.name?files[0]?.name:'';
+    const fExt = fName?fName.substring(fName.lastIndexOf('.')):'';
+    
+    if(fExt && (['.pem','pem']).includes(fExt)){
+
+      document.getElementById("selected_file_name").innerHTML = files[0].name;
+    
+    } else {
+      alert("Invalid File Uploaded, File should be '.pem' extention.");
+      document.getElementById("license_file_upload").value = "";
+    }
+
   } else if (files && files.length > 1) {
     alert("Please select single license file with '.pem' extention.");
     event.target.files = null;
@@ -168,12 +182,14 @@ const getLicenseDetails = () => {
 
 const displayLicenseDetails = (detailsObj) => {
   if (detailsObj) {
+    licenceId = detailsObj.data?.id;
+
     let licenseCardHtml = ` <div class="card border-success m-3 w-75">
     <div class="card-header">
         <img src="./assets/Clean coin.png" width="40" height="40" alt=""> License
     
-        <a href="#" class="btn btn-info ml-3">Check Valid?</a> |
-        <a href="#" class="btn btn-primary ml-2">Renew?</a>
+        <a class="btn btn-info ml-3" id="license_validiti_check_btn">Check Valid?</a> |
+        <a class="btn btn-secondary ml-2 disabled">Renew?</a>
     </div>
     <div class="card-body">
         <h5 class="card-title text-success">Basic Details</h5>
@@ -198,8 +214,23 @@ const displayLicenseDetails = (detailsObj) => {
 
     licenseCardView.innerHTML = licenseCardHtml;
     document.getElementById("No_licenseCardView").style.display = "none";
+
+    document.getElementById("license_validiti_check_btn").onclick = checkValidity;
   } else {
     licenseCardView.innerHTML = ``;
     document.getElementById("No_licenseCardView").style.display = "block";
   }
 };
+
+const checkValidity = ()=>{
+  axios
+  .get(`/api/validateLicense/${licenceId}`)
+  .then((result) => {
+    console.log({ resultData: result.data });
+    responseDisplay(result.data);
+    
+  })
+  .catch((err) => {
+    console.log(err);
+  });
+}
