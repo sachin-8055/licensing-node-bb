@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
 
 const responseDisplay = (res) => {
   try {
-    if (res && res.resultCode > 0) {
+    if (res && res?.resultCode > 0) {
       resCard.style.display = "block";
       resCardImg.setAttribute("src", "./assets/Success.png");
       resCardName.innerText = "Success";
@@ -33,13 +33,21 @@ const responseDisplay = (res) => {
       resData.innerText = res?.data || "";
       resMsg.innerText = res?.message || "";
       resObj.textContent = JSON.stringify(res, undefined, 2);
-    } else if (res && res.resultCode < 0) {
+    } else if (res && res?.resultCode < 0) {
       resCard.style.display = "block";
       resCardImg.setAttribute("src", "./assets/ERROR.png");
       resCardName.innerText = "Error";
 
       resData.innerText = res?.data || "";
       resMsg.innerText = res?.message || "";
+      resObj.textContent = JSON.stringify(res, undefined, 2);
+    } else if (res) {
+      resCard.style.display = "block";
+      resCardImg.setAttribute("src", "./assets/Warning.png");
+      resCardName.innerText = "Info";
+
+      resData.innerText = "";
+      resMsg.innerText ="";
       resObj.textContent = JSON.stringify(res, undefined, 2);
     }
   } catch (error) {
