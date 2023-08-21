@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/sachin-8055/licensing-bb#readme",
   "dependencies": {
-    "@fingerprintjs/fingerprintjs": "^3.1.1",
+    "@fingerprintjs/fingerprintjs": "^3.4.2",
     "address": "^1.2.2",
     "crypto-js": "^4.1.1",
     "https": "^1.0.0",
