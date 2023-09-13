@@ -1,75 +1,16 @@
 var { machineId, machineIdSync } = require("node-machine-id");
-const { v4: uuidv4 } = require("uuid");
+// const { v4: uuidv4 } = require("uuid");
 const moment = require("moment-timezone");
 const address = require("address");
 const fetch = require("node-fetch");
 const fs = require("fs");
-const forge = require("node-forge");
-var CryptoJS = require("crypto-js");
+// const forge = require("node-forge");
+// var CryptoJS = require("crypto-js");
+const crypto = require("crypto");
 const https = require("https");
 
-let invalidResponse = {
-  resultCode: -1,
-  data: null,
-  message: "Something Went Wrong!",
-};
+const defaultResponse = { code: -100, data: {}, result: "", flag: true };
 
-const forgeKeyCreationOptions = {
-  bits: 2048,
-  e: 0x10001,
-};
-
-let baseDir = process.cwd();
-let infoTracerFile = "infoTrace.json";
-let serverKey = "server.pem";
-let clientKey = "client.pem";
-let LicenseFileDir = `${baseDir}/license`;
-// let httpsAgent = new https.Agent({ rejectUnauthorized: false });
-let httpsAgent = null;
-
-const updateTrace = async (JsonData) => {
-  if (fs) {
-    let filePath = `${baseDir}/veri5now`;
-
-    if (!fs.existsSync(filePath)) {
-      fs.mkdirSync(filePath, { recursive: true });
-    }
-
-    let oldTrace = await getTrace();
-
-    if (oldTrace && oldTrace != null && JsonData) {
-      let newTraceData = { ...oldTrace, ...JsonData };
-
-      fs.writeFileSync(
-        `${filePath}/${infoTracerFile}`,
-        JSON.stringify(newTraceData, null, 2)
-      );
-    } else if (!oldTrace && JsonData) {
-      fs.writeFileSync(
-        `${filePath}/${infoTracerFile}`,
-        JSON.stringify(JsonData, null, 2)
-      );
-    }
-  }
-};
-
-const getTrace = async () => {
-  if (fs) {
-    let filePath = `${baseDir}/veri5now`;
-    if (fs.existsSync(`${filePath}/${infoTracerFile}`)) {
-      let traceFileData = fs.readFileSync(
-        `${filePath}/${infoTracerFile}`,
-        "utf-8"
-      );
-
-      if (traceFileData) {
-        return JSON.parse(traceFileData);
-      }
-    }
-
-    return null;
-  }
-};
 const License = (() => {
   let productCode;
   let baseUrl;
@@ -80,867 +21,255 @@ const License = (() => {
   let dateTime = new Date();
   let timeZone = moment.tz.guess();
 
-  /**
-   *
-   * @param {String} url
-   * @param {String} id
-   *
-   */
-  const init = async (url, proCode, clientSecret) => {
-    baseUrl = url;
-    productCode = proCode;
-    await machineId().then((id) => {
-      deviceId = id;
-    });
-
-    // let id = machineIdSync()
-    // console.log({id})
-
-    if (!secretId) {
-      secretId = clientSecret || uuidv4();
-    }
-    platform = process?.platform || "";
-
-    // console.log("INIT>>",{baseDir});
-
-    if (!fs.existsSync(`${baseDir}/veri5now/private.pem`)) {
-      generateClientKeys();
-    }
-    // Immediate Connect to License Server to get Product Keys
-    await connect();
-
-    return {
-      baseUrl,
-      productCode,
-      secretId,
-      dateTime,
-      timeZone,
-    };
-  };
-
-  /**
-   *
-   * @param {Function} callback
-   * @returns {Object} {}
-   */
-  const getMyConfig = async (callback) => {
-    let _data = {
-      baseUrl,
-      productCode,
-      deviceId,
-      secretId,
-      IPAddress,
-      dateTime,
-      timeZone,
-    };
-
-    if ("function" == typeof callback) {
-      callback(_data);
+  function isInvalid(value) {
+    if (undefined == value || null == value || value.toString().trim() == "") {
+      return true;
     } else {
-      return _data;
+      return false;
     }
-  };
+  }
 
-  /**
-   *
-   * @param {Function} callback
-   * @returns {Object} {}
-   */
-  const checkLicense = async (callback) => {
-    const _data = { ...invalidResponse };
+  const init = async (base_Url, product_Code, callback) => {
+    let _res = { ...defaultResponse };
+
     try {
-      if (!fs.existsSync(`${LicenseFileDir}/license`)) {
-        /** Need to upload License */
-        _data.resultCode = -1;
-        _data.message = "License Not Found.";
-        _data.data = "LICENSE_NOT_FOUND";
+      if (fs.existsSync("init")) {
+        let fileData = fs.readFileSync("init", "utf-8");
+        _res.code = 1;
+        _res.data = JSON.parse(fileData);
+        _res.result = "Success";
       } else {
-        _data.resultCode = 1;
-        _data.message = "License Found.";
-
-        let extractedData = await extractLicense();
-
-        // console.log({extractedData});
-
-        if (!extractedData) {
-          _data.resultCode = -1;
-          _data.message = "Extraction Error - Invalid License";
-        } else {
-          const currentDate = moment();
-
-          const isIssueBeforeOrToday = moment(currentDate).isSameOrAfter(
-            extractedData.meta?.issued
-          );
-          const isExpired = moment(currentDate).isAfter(
-            extractedData.meta?.expiry
-          );
-
-          if (!isIssueBeforeOrToday) {
-            /** If isIssueBeforeOrToday is false means issue date is future date, so STOP user */
-
-            _data.resultCode = -1;
-            _data.message = "Issue date invalid, License not active";
-          } else if (isExpired) {
-            /** If isExpired is true, so STOP user */
-
-            _data.resultCode = -1;
-            _data.message = "License is expired, please request new license.";
-          }
-        }
-      }
-
-      if ("function" == typeof callback) {
-        callback(_data);
-      } else {
-        return _data;
-      }
-    } catch (error) {
-      console.log("CATCH : ", error);
-    }
-  };
-
-  /**
-   *
-   * @param {Function} callback
-   * @returns {Object} {}
-   */
-  const getLicenseDetails = async (callback) => {
-    let _data = { ...invalidResponse };
-    try {
-      const licCheckResponse = await checkLicense();
-
-      if (licCheckResponse?.resultCode == 1) {
-        let extractedData = await extractLicense();
-
-        _data = licCheckResponse;
-        _data.data = extractedData;
-      } else {
-        _data = licCheckResponse;
-      }
-
-      if ("function" == typeof callback) {
-        callback(_data);
-      } else {
-        return _data;
-      }
-    } catch (error) {
-      console.log("CATCH : ", error);
-    }
-  };
-
-  const connect = async () => {
-    console.log("Connecting...");
-    try {
-      if (!fs.existsSync(`${baseDir}/veri5now/${serverKey}`)) {
-        await getProductCertificateKeyFromServer(baseUrl, productCode);
-      } else {
-        let oldTrace = await getTrace();
-        if (oldTrace?.productCode != productCode) {
-          resyncServerCert();
-
-          console.log("Updating Product Cert....");
-        } else {
-          console.log(
-            "Product Cert Present, to resync call 'Veri5Now.resyncServerCert()'"
-          );
-        }
-      }
-    } catch (error) {
-      console.error("CONNECT ERROR : ", error);
-    }
-  };
-
-  const resyncServerCert = async () => {
-    try {
-      await getProductCertificateKeyFromServer(baseUrl, productCode);
-    } catch (error) {
-      console.error("Resync Serv. Cert. ERROR : ", error);
-    }
-  };
-
-  const getLicenseByLicenseId = async (licenceId, callback) => {
-    if (!licenceId) {
-      throw new Error("No License ID Found.");
-    }
-
-    try {
-      await fetch(`${baseUrl}/license/api/retrieve/${licenceId}`, {
-        method: "GET",
-        agent: httpsAgent,
-      })
-        .then((res) => {
-          const isJson = res.headers
-            .get("content-type")
-            ?.includes("application/json");
-
-          if (isJson) {
-            return res.json();
-          } else {
-            invalidResponse.data =
-              `${res?.status} - ${res?.statusText}` || null;
-            return invalidResponse;
-          }
-        })
-        .then((responseJson) => {
-          let _data = responseJson;
-
-          if ("function" == typeof callback) {
-            callback(_data);
-          } else {
-            return _data;
-          }
-        });
-    } catch (error) {
-      console.error("LICENSE BY ID ERROR : ", error);
-    }
-  };
-
-  /**
-   *
-   * @param {Function} callback
-   * @returns {String}
-   *
-   */
-  const getLicenseAccessKey = async (callback) => {
-    let _data = { ...invalidResponse };
-
-    try {
-      let fullPublicKey = fs.readFileSync(
-        `${baseDir}/veri5now/${serverKey}`,
-        "utf8"
-      );
-
-      if (!fullPublicKey.includes("PUBLIC KEY")) {
-        fullPublicKey = await getFormatedKey(fullPublicKey, "public");
-      }
-
-      let _clientConfig = await getMyConfig();
-
-      let encrClientData = await aEsEncryption(
-        secretId,
-        JSON.stringify(_clientConfig)
-      );
-
-      if (encrClientData?.message) {
-        console.error("aEsEncryption Fail : " + encrClientData?.message);
-      }
-
-      // console.log({fullPublicKey});
-
-      let encrSecret = await rsaEncryption(fullPublicKey, secretId);
-
-      if (encrSecret?.message) {
-        console.error("rsaEncryption Fail : " + encrSecret?.message);
-      }
-
-      let fullClientKey = fs.readFileSync(
-        `${baseDir}/veri5now/public.pem`,
-        "utf8"
-      );
-
-      let clientKey = await getStringKey(fullClientKey);
-
-      let response_data = `${encrSecret?.data || "NA"}..${clientKey}..${
-        encrClientData?.data || "NA"
-      }`;
-
-      fs.writeFileSync(`${baseDir}/veri5now/temp_ecrypted.txt`, response_data, {
-        encoding: "utf-8",
-      });
-
-      _data.resultCode = 1;
-      _data.message = "Success";
-      _data.data = {
-        localFilePath: `${baseDir}/veri5now/temp_ecrypted.txt`,
-        serverFileEndPoint: "/veri5now/temp_ecrypted.txt",
-      };
-
-      if ("function" == typeof callback) {
-        callback(_data);
-      } else {
-        return _data;
-      }
-    } catch (error) {
-      console.log("LICENSE Access KEY ERROR :", error);
-    }
-  };
-
-  /**
-   *
-   * @param {String} accessKey
-   * @param {Function} callback
-   * @returns
-   *
-   */
-  const getLicenseByAccessKey = async (accessKey, licenseId, callback) => {
-    try {
-      if (accessKey) {
-        let fullPublicKey = fs.readFileSync(
-          `${baseDir}/veri5now/${serverKey}`,
-          "utf8"
-        );
-
-        let encrClientDevice = await aEsEncryption(
-          secretId,
-          await getMyConfig()
-        );
-        let encrSecret = await rsaEncryption(fullPublicKey, secretId);
-
-        // console.log({ encrClientDevice });
-
-        fetch(
-          `${baseUrl}/license/api/getLicenseFile/${productCode}/${licenseId}`,
-          {
-            method: "POST",
-            agent: httpsAgent,
-            headers: {
-              "Content-Type": "application/json",
-              "X-User-Certificate": encrClientDevice.data,
-            },
-            body: JSON.stringify({
-              key: accessKey,
-              userSecretKey: encrSecret.data,
-            }),
-          }
-        )
-          .then((res) => {
-            const isJson = res.headers
-              .get("content-type")
-              ?.includes("application/json");
-
-            const isFile = res.headers
-              .get("content-type")
-              ?.includes("application/octet-stream");
-
-            if (isJson) {
-              return res.json();
-            } else if (isFile) {
-              // return res.blob();
-              return res.json();
-            } else {
-              invalidResponse.data =
-                `${res?.status} - ${res?.statusText}` || null;
-              return invalidResponse;
-            }
-          })
-          .then((responseJson) => {
-            if ("undefined" != typeof fs) {
-              if (!fs.existsSync(LicenseFileDir)) {
-                fs.mkdirSync(LicenseFileDir, { recursive: true });
-              }
-
-              fs.writeFileSync(
-                LicenseFileDir + "/license",
-                JSON.stringify(responseJson)
-              );
-            } else {
-              if ("function" == typeof callback) {
-                callback(responseJson);
-              } else {
-                return responseJson;
-              }
-            }
+        if (!isInvalid(base_Url) && !isInvalid(product_Code)) {
+          await machineId().then((id) => {
+            deviceId = id;
           });
+          platform = process?.platform || "";
+          productCode = product_Code;
+          baseUrl = base_Url;
+
+          secretId = secretId ? secretId : (crypto.randomBytes(32)).toString("base64");
+
+          /** Check key exist and generate new keys */
+          const keyGen = generateClientKeys();
+          if (keyGen) {
+            /** new Key is generated need to exchange with server */
+          }
+
+          const _configData = {
+            baseUrl,
+            productCode,
+            deviceId,
+            secretId,
+            IPAddress,
+            dateTime,
+            timeZone,
+          };
+
+          fs.writeFileSync("init", JSON.stringify(_configData));
+
+          _res.code = 1;
+          _res.data = _configData;
+          _res.result = "Success";
+        } else {
+          _res.code = -1;
+          _res.result = "'baseUrl' OR 'productCode' Not Found, please check parameters.";
+        }
+      }
+
+      if ("function" == typeof callback) {
+        callback(_res);
+      } else {
+        return _res;
       }
     } catch (error) {
-      console.log("LICENSE BY ACCESS KEY ERROR :", error);
+      console.log(error);
+      _res.code = -99;
+      _res.result = error?.message || "Exception occured : " + error.toString();
     }
   };
 
-  /**
-   *
-   * @param {File} file
-   * @param {Function} callback
-   * @returns {Boolean} true | false
-   */
-  const uploadLicenseFile = async (file, callback) => {
+  const generateClientKeys = () => {
     try {
-      let _data = { ...invalidResponse };
-      if (!file) {
-        console.log("License Extract FILE NOT FOUND ");
-      }
+      if (!fs.existsSync("public.pem") || !fs.existsSync("private.pem")) {
+        const keyPair = crypto.generateKeyPairSync("rsa", {
+          modulusLength: 2048,
+          publicKeyEncoding: {
+            type: "spki",
+            format: "pem",
+          },
+          privateKeyEncoding: {
+            type: "pkcs8",
+            format: "pem",
+            cipher: "aes-256-cbc",
+            passphrase: "",
+          },
+        });
 
-      if (!fs.existsSync(LicenseFileDir)) {
-        fs.mkdirSync(LicenseFileDir, { recursive: true });
-      }
+        // Creating public and private key file
+        fs.writeFileSync("public.pem", keyPair.publicKey);
+        fs.writeFileSync("private.pem", keyPair.privateKey);
 
-      let fromUser = fs.readFileSync(file.path, "utf-8");
-
-      fs.writeFileSync(`${LicenseFileDir}/license`, fromUser);
-
-      _data.message = "File Uploaded";
-      _data.resultCode = 1;
-
-      if ("function" == typeof callback) {
-        callback(_data);
+        return true;
       } else {
-        return _data;
+        return false;
       }
     } catch (error) {
-      console.log("License Upload ERROR : ", error);
+      console.log(error);
       return false;
     }
   };
-  /**
-   *
-   * @param {Function} callback
-   * @returns {Object}
-   *
-   */
-  const extractLicense = async (callback) => {
+
+  const getConfig = async (callback) => {
+    let _res = { ...defaultResponse };
+
     try {
-      let path = `${process.cwd()}/license`;
-      let licFileData = fs.readFileSync(`${path}/license`, "utf-8");
-      let licFileData_json =
-        "string" == typeof licFileData ? JSON.parse(licFileData) : licFileData;
+      let _data = {};
 
-      let clientPrtKey = fs.readFileSync(
-        `${baseDir}/veri5now/private.pem`,
-        "utf-8"
-      );
+      if (fs.existsSync("init")) {
+        let fileData = fs.readFileSync("init", "utf-8");
+        _data = JSON.parse(fileData);
+        console.log("FROM FILE :: ", _data);
+      }
+      // else {
+      //   _data = {
+      //     baseUrl,
+      //     productCode,
+      //     deviceId,
+      //     secretId,
+      //     IPAddress,
+      //     dateTime,
+      //     timeZone,
+      //   };
+      // }
 
-      // console.log({sign:licFileData_json.sign})
-      // console.log({clientPrtKey})
-      let decryptedSecret = await rsaDecryption(
-        clientPrtKey,
-        licFileData_json.sign
-      );
-
-      let decryptPackageData = await aEsDecryption(
-        decryptedSecret.data,
-        licFileData_json.enc
-      );
+      _res.code = 1;
+      _res.result = "Success";
+      _res.data = _data;
 
       if ("function" == typeof callback) {
-        callback(decryptPackageData.data);
+        callback(_res);
       } else {
-        return decryptPackageData.data;
+        return _res;
       }
     } catch (error) {
-      console.log("License Extract ERROR : ", error);
+      console.log(error);
+      _res.code = -99;
+      _res.result = error?.message || "Exception occured : " + error.toString();
     }
   };
 
-  /**
-   *
-   * @param {String} licenseId
-   * @param {Function} callback
-   */
-  const validateLicense = async (licenseId, callback) => {
+  const doExchange = async () => {
     try {
-      let fullPublicKey = fs.readFileSync(
-        `${baseDir}/veri5now/${serverKey}`,
-        "utf8"
-      );
+      if (fs.existsSync("init")) {
+        let fileData = fs.readFileSync("init", "utf-8");
+        const _data = JSON.parse(fileData);
+        console.log("FROM FILE :: ", _data);
 
-      let encrClientDevice = await aEsEncryption(secretId, await getMyConfig());
+        const secretKey = _data.secretId;
 
-      let encrSecret = await rsaEncryption(fullPublicKey, secretId);
+        const clientDataEncrRes = await aesEncryption(secretKey, JSON.stringify(_data));
 
-      let json_body_string = JSON.stringify({
-        productCode: productCode,
-        clientId: "",
-        licenseId: licenseId,
-        userSecretKey: encrSecret.data,
-      });
+        const secretKeyEncrRes = await rsaEncryption(secretKey);
 
-      var _headers = {
-        "Content-Type": "application/json",
-        "X-User-Certificate": encrClientDevice.data,
-      };
+        console.log({ clientDataEncrRes, secretKeyEncrRes });
 
-      await fetch(
-        `${baseUrl}/license/api/validateClientLicense/${productCode}`,
-        {
-          method: "POST",
-          agent: httpsAgent,
-          headers: _headers,
-          body: json_body_string,
-        }
-      )
-        .then((res) => {
-          const isJson = res.headers
-            .get("content-type")
-            ?.includes("application/json");
-
-          const isFile = res.headers
-            .get("content-type")
-            ?.includes("application/octet-stream");
-
-          if (isJson) {
-            return res.json();
-          } else if (isFile) {
-            // return res.blob();
-            return res.json();
-          } else {
-            invalidResponse.data =
-              `${res?.status} - ${res?.statusText}` || null;
-            return invalidResponse;
-          }
-        })
-        .then((responseJson) => {
-          // console.log({responseJson})
-          if ("function" == typeof callback) {
-            callback(responseJson);
-          } else {
-            return responseJson;
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
+        return false;
+      } else {
+        return false;
+      }
     } catch (error) {
-      console.log("License Extract ERROR : ", error);
-    }
-  };
-
-  /**
-   *
-   * @param {Function} callback
-   */
-  const getProductList = async (callback) => {
-    try {
-      var _headers = {
-        "Content-Type": "application/json",
-      };
-
-      await fetch(`${baseUrl}/license/api/getProductList`, {
-        method: "get",
-        agent: httpsAgent,
-        headers: _headers,
-      })
-        .then((res) => {
-          const isJson = res.headers
-            .get("content-type")
-            ?.includes("application/json");
-
-          if (isJson) {
-            return res.json();
-          } else {
-            invalidResponse.data =
-              `${res?.status} - ${res?.statusText}` || null;
-            return invalidResponse;
-          }
-        })
-        .then((responseJson) => {
-          // console.log({ responseJson });
-          if ("function" == typeof callback) {
-            callback(responseJson);
-          } else {
-            return responseJson;
-          }
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    } catch (error) {
-      console.log("License Extract ERROR : ", error);
+      console.log(error);
+      return false;
     }
   };
 
   return {
     init,
-    getMyConfig,
-    // connect,
-    checkLicense,
-    uploadLicenseFile,
-    resyncServerCert,
-    getLicenseAccessKey,
-    extractLicense,
-    getLicenseDetails,
-    getProductList,
-    // getLicenseByLicenseId,
-    // getLicenseByAccessKey,
-    validateLicense,
+    doExchange,
+    getConfig,
   };
+
 })();
 
-async function getProductCertificateKeyFromServer(baseUrl, productCode) {
+async function aesEncryption(secretKey, plainText) {
   try {
-    fetch(`${baseUrl}/license/api/getCertificateKey/${productCode}`, {
-      method: "GET",
-      agent: httpsAgent,
-      // headers: {
-      //   "Content-Type": "application/json",
-      //   "X-User-Certificate":encrClientDevice
-      // },
-      // body: json_body_string,
-    })
-      .then((res) => {
-        const isJson = res.headers
-          .get("content-type")
-          ?.includes("application/json");
+    let aesKey = Buffer.from(secretKey, "base64");
 
-        if (isJson) {
-          return res.json();
-        } else {
-          invalidResponse.data = `${res?.status} - ${res?.statusText}` || null;
-          return invalidResponse;
-        }
-      })
-      .then((responseJson) => {
-        let _data = responseJson;
+    const cipher = crypto.createCipheriv("aes-256-ecb", aesKey, null); // Note the use of null for IV
+    let encmsg = cipher.update(plainText, "utf8", "base64");
+    encmsg += cipher.final("base64");
 
-        if (_data.resultCode > 0) {
-          const fullPath = baseDir + "/veri5now";
-
-          if (!fs.existsSync(fullPath)) {
-            fs.mkdirSync(fullPath, { recursive: true });
-          }
-
-          fs.writeFileSync(fullPath + "/" + serverKey, _data.data);
-
-          console.log(
-            `Server Certificate Recived for Product : ${productCode}`
-          );
-          return true;
-        }
-      });
-
-    updateTrace({ productCode, dateTime: new Date() });
+    return encmsg;
   } catch (error) {
-    console.error("CONNECT ERROR : ", error);
+    console.log(error);
+    return "";
   }
 }
 
-// License Specific Key generation and Encr Decr
-/**
- *
- * @param {String} key
- * @returns {String}
- */
-async function getStringKey(key) {
+async function aesDecryption(secretKey, encryptedText) {
   try {
-    if (!key) {
-      return "Key is empty";
-    }
-
-    let stringKey = key
-      .replace("-----BEGIN RSA PRIVATE KEY-----", "")
-      .replace("-----BEGIN PUBLIC KEY-----", "")
-      .replace("-----BEGIN LICENSE KEY-----", "");
-
-    stringKey = stringKey
-      .replace("-----END RSA PRIVATE KEY-----", "")
-      .replace("-----END PUBLIC KEY-----", "")
-      .replace("-----END LICENSE KEY-----", "");
-
-    stringKey = stringKey.replace(/\r\n/g, "");
-
-    return stringKey;
+    let aesKey = Buffer.from(secretKey, "base64");
+    const decipher = crypto.createDecipheriv("aes-256-ecb", aesKey, null); // Note the use of null for IV
+    let decryptedData = decipher.update(encryptedText, "base64", "utf8");
+    decryptedData += decipher.final("utf8");
+    return decryptedData;
   } catch (error) {
-    console.log("Key to String Error", error);
+    console.log(error);
+    return "";
   }
 }
 
-// License Specific Key generation and Encr Decr
-/**
- *
- * @param {String} key
- * @param {String} type 'public' | 'private' | 'license'
- * @returns {String}
- */
-async function getFormatedKey(key, type) {
+async function rsaEncryption(plainText) {
   try {
-    if (!key || !type) {
-      return "Key or Type is empty";
-    }
+    let PUBKEY = fs.readFileSync("public.pem", "utf8");
 
-    // console.log({ len: key.length });
-    let i = 0;
-    let tempFormatedData = "";
+    // Encrypting msg with publicEncrypt method
+    let encmsg = crypto.publicEncrypt(PUBKEY, Buffer.from(plainText, "utf8")).toString("base64");
 
-    do {
-      tempFormatedData += key.substring(i, i + 64) + "\r\n";
-
-      i = i + 64;
-
-      // console.log({ i });
-    } while (i <= key.length);
-
-    if (type.toLowerCase() === "private") {
-      tempFormatedData = `-----BEGIN RSA PRIVATE KEY-----\r\n${tempFormatedData}-----END RSA PRIVATE KEY-----\r\n`;
-    } else if (type.toLowerCase() === "public") {
-      tempFormatedData = `-----BEGIN PUBLIC KEY-----\r\n${tempFormatedData}-----END PUBLIC KEY-----\r\n`;
-    } else if (type.toLowerCase() === "license") {
-      tempFormatedData = `-----BEGIN LICENSE KEY-----\r\n${tempFormatedData}-----END LICENSE KEY-----\r\n`;
-    }
-
-    return tempFormatedData;
+    return encmsg;
   } catch (error) {
-    console.log("Key to String Error", error);
+    console.log(error);
+    return "";
   }
 }
 
-async function generateClientKeys() {
+async function rsaDecryption(encryptedText) {
   try {
-    const keys = forge.pki.rsa.generateKeyPair(forgeKeyCreationOptions);
-    const privateKey = forge.pki.privateKeyToPem(keys.privateKey);
-    const publicKey = forge.pki.publicKeyToPem(keys.publicKey);
+    let PRIVKEY = fs.readFileSync("private.pem", "utf8");
 
-    const filePath = baseDir + "/veri5now";
-    console.log("New Licence Creation :", { filePath });
+    // Decrypting msg with privateDecrypt method
+    let plaintext = crypto.privateDecrypt(
+      {
+        key: PRIVKEY,
+        passphrase: "",
+      },
+      Buffer.from(encryptedText, "base64")
+    );
 
-    if (!fs.existsSync(filePath)) {
-      fs.mkdirSync(filePath, { recursive: true });
-    }
-
-    if (privateKey) {
-      fs.writeFileSync(filePath + "/private.pem", privateKey);
-      fs.writeFileSync(filePath + "/public.pem", publicKey);
-    }
-
-    return true;
+    return plaintext.toString("utf8");
   } catch (error) {
-    console.error("Catch generateClientKeys : ", error);
-    return null;
+    console.log(error);
+    return "";
   }
 }
-
-/**
- *
- * @param {String} secretKey
- * @param {String} data
- * @returns {Object} {data:""} | {message:"Error"}
- */
-async function aEsEncryption(secretKey, data) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      var input_data =
-        "object" == typeof data
-          ? JSON.stringify(data)
-          : "string" != typeof data
-          ? data.toString()
-          : data;
-
-      if (!secretKey)
-        return alert("Invalid / Empty secret key found to encrypt data");
-
-      // console.log("aEsEncryption",{SEC:secretKey})
-      var encrypted = await CryptoJS.AES.encrypt(input_data, secretKey);
-
-      resolve({ data: encrypted.toString() });
-    } catch (error) {
-      // console.log(error);
-      reject(error);
-      throw new Error(error);
-    }
-  });
-}
-
-/**
- *
- * @param {String} publicKey
- * @param {String} dataToEncrypt
- * @returns {Object} {data:""} | {message:"Error"}
- *
- */
-async function rsaEncryption(publicKey, dataToEncrypt) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      var input_data =
-        "object" == typeof dataToEncrypt
-          ? JSON.stringify(dataToEncrypt)
-          : "string" != typeof dataToEncrypt
-          ? dataToEncrypt.toString()
-          : dataToEncrypt;
-
-      // console.log("aEsEncryption",{publicKey})
-      if (publicKey) {
-        // Convert the keys from PEM format to Forge format
-        const forgePublicKey = forge.pki.publicKeyFromPem(publicKey);
-
-        // Encrypt data with the public key
-        const key_encrypted = forgePublicKey.encrypt(input_data);
-
-        // console.log(`Encrypted data: ${encrypted}`);
-        const key_b64 = key_encrypted.toString("base64");
-
-        resolve({ data: key_b64 });
-      } else {
-        resolve({ message: "No Self Certificate Key Available To Decrypt" });
-      }
-    } catch (error) {
-      // console.log(error);
-      reject(error);
-      throw new Error(error);
-    }
-  });
-}
-
-/**
- *
- * @param {String} SecretKey
- * @param {String} encryptedData
- * @returns {Object} {data:""} | {message:"Error"} | "Error"
- *
- */
-async function aEsDecryption(SecretKey, encryptedData) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      if (!SecretKey)
-        return alert("Invalid / Empty secret key found to encrypt data");
-
-      /** Data Decryption */
-
-      var bytes = CryptoJS.AES.decrypt(encryptedData, SecretKey);
-      var originalData = bytes.toString(CryptoJS.enc.Utf8);
-
-      // console.log({originalData})
-      if ("string" == typeof originalData) {
-        resolve({ data: JSON.parse(originalData) });
-      } else {
-        resolve({ data: originalData });
-      }
-    } catch (error) {
-      // console.log(error);
-      reject(error);
-      throw new Error(error);
-    }
-  });
-}
-
-/**
- *
- * @param {String} privateKey
- * @param {String} dataToDecrypt
- * @returns {Object} {data:""} | {message:"Error"}
- *
- */
-async function rsaDecryption(privateKey, dataToDecrypt) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      if (privateKey) {
-        // Convert the keys from PEM format to Forge format
-        const forgePrivateKey = forge.pki.privateKeyFromPem(privateKey);
-
-        // Decrypt data with the private key
-        const decryptedData = forgePrivateKey.decrypt(dataToDecrypt);
-
-        resolve({ data: decryptedData });
-      } else {
-        resolve({ message: "No Self Certificate Key Available To Decrypt" });
-      }
-    } catch (error) {
-      // console.log(error);
-      reject(error);
-      throw new Error(error);
-    }
-  });
-}
-/***
- *
- *
- * END Of Encryption and Decryption
- *
- *
- */
 
 if ("undefined" != typeof module) {
-  var Veri5Now = License;
-  module.exports = Veri5Now;
+  var BBLicense = License;
+  module.exports = BBLicense;
 } else if ("undefined" != typeof exports) {
-  exports.Veri5Now = License;
+  exports.BBLicense = License;
 } else {
-  var Veri5Now = License;
+  var BBLicense = License;
 }
+
+
+License.init("http://dhdhd.com","PROPROPRO");
+setTimeout(() => {
+  
+License.getConfig();
+}, 2000);
+
+setTimeout(() => {
+  
+License.doExchange();
+}, 3000);

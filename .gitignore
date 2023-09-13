@@ -128,3 +128,6 @@ out
 .pnp.*
 *.pem
 license/license
+init
+private.pem
+public.pem
