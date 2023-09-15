@@ -17,7 +17,7 @@ const License = (() => {
   let secretId;
   let platform;
   let deviceId;
-  let IPAddress = address.ip();
+  let ip = address.ip();
   let dateTime = new Date();
   let timeZone = moment.tz.guess();
 
@@ -60,7 +60,7 @@ const License = (() => {
             productCode,
             deviceId,
             secretId,
-            IPAddress,
+            ip,
             dateTime,
             timeZone,
           };
@@ -136,7 +136,7 @@ const License = (() => {
       //     productCode,
       //     deviceId,
       //     secretId,
-      //     IPAddress,
+      //     ip,
       //     dateTime,
       //     timeZone,
       //   };
