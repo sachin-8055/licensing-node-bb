@@ -6,6 +6,7 @@ const Veri5Now  = require('licensing-node-bb');
 const licenseRouting = require("./routing/index.routing")
 const testApiRouting = require("./routing/test.routing")
 const logicApiRouting = require("./routing/logic.routing")
+const v1Routings = require("./routing/v1.routing")
 
 const app = express();
 
@@ -27,6 +28,8 @@ app.use("/api",licenseRouting);
 app.use("/api/test",testApiRouting);
 
 app.use("/api/logic",logicApiRouting);
+
+app.use("/api/v1",v1Routings);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
