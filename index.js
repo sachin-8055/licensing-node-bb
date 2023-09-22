@@ -14,6 +14,43 @@ const { generateAESKeys, aesEncryption, aesDecryption } = require("./AES.lib");
 
 const defaultResponse = { code: -100, data: {}, result: "", flag: true };
 
+let infoTracerFile = "infoTrace.json";
+
+const updateTrace = async (JsonData) => {
+  if (fs) {
+    // let filePath = `${baseDir}/veri5now`;
+
+    // if (!fs.existsSync(filePath)) {
+    //   fs.mkdirSync(filePath, { recursive: true });
+    // }
+
+    let oldTrace = await getTrace();
+
+    if (oldTrace && oldTrace != null && JsonData) {
+      let newTraceData = { ...oldTrace, ...JsonData };
+
+      fs.writeFileSync(`${infoTracerFile}`, JSON.stringify(newTraceData, null, 2));
+    } else if (!oldTrace && JsonData) {
+      fs.writeFileSync(`${infoTracerFile}`, JSON.stringify(JsonData, null, 2));
+    }
+  }
+};
+
+const getTrace = async () => {
+  if (fs) {
+    // let filePath = `${baseDir}/veri5now`;
+    if (fs.existsSync(`${infoTracerFile}`)) {
+      let traceFileData = fs.readFileSync(`${infoTracerFile}`, "utf-8");
+
+      if (traceFileData) {
+        return JSON.parse(traceFileData);
+      }
+    }
+
+    return null;
+  }
+};
+
 const License = (() => {
   let licenseKey;
   let baseUrl;
@@ -24,6 +61,9 @@ const License = (() => {
   let dateTime = new Date();
   let timeZone = moment.tz.guess();
 
+  function License(){
+    console.log("BBLicense Configured...");
+  }
   function isInvalid(value) {
     if (undefined == value || null == value || value.toString().trim() == "") {
       return true;
@@ -35,14 +75,45 @@ const License = (() => {
   const init = async (base_Url, license_Key, callback) => {
     let _res = { ...defaultResponse };
 
+    console.log({base_Url, license_Key})
     try {
-      if (fs.existsSync("init")) {
-        let fileData = fs.readFileSync("init", "utf-8");
-        _res.code = 1;
-        _res.data = JSON.parse(fileData);
-        _res.result = "Success";
-      } else {
-        if (!isInvalid(base_Url) && !isInvalid(license_Key)) {
+      if (!isInvalid(base_Url) && !isInvalid(license_Key)) {
+        if (fs.existsSync("init")) {
+          let fileData = fs.readFileSync("init", "utf-8");
+          const parseData = JSON.parse(fileData);
+
+          if (parseData.licenseKey != license_Key) {
+            parseData.licenseKey = license_Key;
+            parseData.dateTime = new Date();
+
+            fs.writeFileSync("init", JSON.stringify(parseData));
+
+            try {
+              
+              if (fs.existsSync("public.pem")) {
+                console.log(">>>>>> Deleting  public >>>>>> ")
+                fs.unlinkSync("public.pem");
+              }
+              if (fs.existsSync("private.pem")) {
+                console.log(">>>>>> Deleting  private >>>>>> ")
+                fs.unlinkSync("private.pem");
+              }
+              if (fs.existsSync("server.pem")) {
+                console.log(">>>>>> Deleting  server >>>>>> ")
+                fs.unlinkSync("server.pem");
+              }
+
+            } catch (error) {
+              console.log(">>>>>>>>>>. File Delete Error >>>>>>")
+              console.log(error)
+            }
+            
+          }
+
+          _res.code = 1;
+          _res.data = parseData;
+          _res.result = "Success";
+        } else {
           await machineId().then((id) => {
             deviceId = id;
           });
@@ -68,12 +139,11 @@ const License = (() => {
           _res.code = 1;
           _res.data = _configData;
           _res.result = "Success";
-        } else {
-          _res.code = -1;
-          _res.result = "'base_Url' OR 'license_Key' Not Found, please check parameters.";
         }
+      } else {
+        _res.code = -1;
+        _res.result = "'base_Url' OR 'license_Key' Not Found, please check parameters.";
       }
-
       let keyGen = null;
 
       /** Check key exist and generate new keys */
@@ -84,7 +154,7 @@ const License = (() => {
           // Creating public and private key file
           fs.writeFileSync("public.pem", keyGen.publicKey);
           fs.writeFileSync("private.pem", keyGen.privateKey);
-
+          console.log(">>>>>> New Keys Are generated >>>>>> ")
           await doExchange();
         }
       }
@@ -112,7 +182,7 @@ const License = (() => {
         devConfig = JSON.parse(fileData);
       }
 
-      console.log("devConfig : ", { devConfig });
+      // console.log("devConfig : ", { devConfig });
 
       let deviceId = devConfig?.deviceId;
       let licenseKey = devConfig?.licenseKey;
@@ -205,10 +275,9 @@ const License = (() => {
         devConfig = JSON.parse(fileData);
       }
 
+      // console.log("devConfig : ", { devConfig });
 
-      console.log("devConfig : ", { devConfig });
-
-      const _clientEncryptedData = await aesEncryption(devConfig?.secretId, _configData);
+      const _clientEncryptedData = await aesEncryption(devConfig?.secretId, devConfig);
       const _clientKeyData = await rsaEncryption("server.pem", devConfig?.secretId);
 
       const licenseServerAPI = `${devConfig.baseUrl}/sdk/api/generateLicense`;
@@ -223,7 +292,7 @@ const License = (() => {
           },
           body: JSON.stringify({
             key: _clientKeyData,
-            licenseKey: _configData?.licenseKey,
+            licenseKey: devConfig?.licenseKey,
             client: _clientEncryptedData,
           }),
         })
@@ -244,6 +313,8 @@ const License = (() => {
               _res.code = 1;
               _res.result = "Success";
               _res.data = _data.data;
+
+              updateTrace({ isExpired: false, isActive: true, dateTime: new Date() });
             } else {
               console.error("Gen License ERROR : ", _data);
 
@@ -267,10 +338,7 @@ const License = (() => {
     let _res = { ...defaultResponse };
 
     try {
-
-      
-      if(!filePath || filePath.trim() == ""){
-
+      if (!filePath || filePath.trim() == "") {
         _res.code = -1;
         _res.result = "'filePath' Not Found, please check parameters.";
 
@@ -283,7 +351,25 @@ const License = (() => {
         let fileData = fs.readFileSync("init", "utf-8");
         devConfig = JSON.parse(fileData);
       }
+      /** Check tracing first is it expired or not active (trace sync from server) */
 
+      let oldTrace = await getTrace();
+
+      if (oldTrace && oldTrace.isActive == false) {
+        _res.code = -2;
+        _res.result = "License is not active, plaease contact admin.";
+        _res.data = null;
+
+        return _res;
+      } else if (oldTrace && oldTrace.isExpired == true) {
+        _res.code = -2;
+        _res.result = "License is Expired, plaease contact admin.";
+        _res.data = null;
+
+        return _res;
+      }
+
+      /**** */
       /** Read License File */
       let _encryptedLicense = await fs.readFileSync(filePath, "utf8");
 
@@ -311,76 +397,73 @@ const License = (() => {
     return _res;
   }
 
+  setInterval(async function () {
+    try {
+      let devConfig = {};
+
+      if (fs.existsSync("init")) {
+        let fileData = fs.readFileSync("init", "utf-8");
+        devConfig = JSON.parse(fileData);
+      }
+
+      // console.log("devConfig : ", { devConfig });
+
+      let deviceId = devConfig?.deviceId;
+      let licenseKey = devConfig?.licenseKey;
+
+      if (!deviceId || !licenseKey) {
+        console.log("Invalid/Incomplete config to sync");
+        return false;
+      }
+
+      const _syncApi = `${devConfig.baseUrl}/sdk/api/sync`;
+      console.log({ _syncApi });
+
+      await fetch(`${_syncApi}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          licenseKey: licenseKey,
+          deviceId: deviceId,
+        }),
+      })
+        .then((res) => {
+          const isJson = res.headers.get("content-type")?.includes("application/json");
+
+          if (isJson) {
+            return res.json();
+          } else {
+            console.log(`${res?.status} - ${res?.statusText}` || "API Call: Error ");
+          }
+        })
+        .then((responseJson) => {
+          let _data = responseJson;
+          // console.log(_data);
+          if (_data?.resultCode > 0) {
+            updateTrace({ isSync: true, dateTime: new Date(), lastSync: new Date() });
+          } else if (_data?.resultCode == -77) {
+            updateTrace({ isExpired: true, dateTime: new Date() });
+          } else if (_data?.resultCode == -88) {
+            updateTrace({ isActive: false, dateTime: new Date() });
+          } else {
+            console.error("Sync ERROR : ", _data);
+          }
+        });
+    } catch (error) {
+      console.error("LICENSE Sync ERROR : ", error);
+    }
+  }, 15000);
+
   return {
     init,
     doExchange,
     getConfig,
     generateLicense,
-    extractLicense
+    extractLicense,
   };
 })();
-
-// async function aesEncryption(secretKey, plainText) {
-//   try {
-//     let aesKey = Buffer.from(secretKey, "base64");
-
-//     const cipher = crypto.createCipheriv("aes-256-ecb", aesKey, null); // Note the use of null for IV
-//     let encmsg = cipher.update(plainText, "utf8", "base64");
-//     encmsg += cipher.final("base64");
-
-//     return encmsg;
-//   } catch (error) {
-//     console.log(error);
-//     return "";
-//   }
-// }
-
-// async function aesDecryption(secretKey, encryptedText) {
-//   try {
-//     let aesKey = Buffer.from(secretKey, "base64");
-//     const decipher = crypto.createDecipheriv("aes-256-ecb", aesKey, null); // Note the use of null for IV
-//     let decryptedData = decipher.update(encryptedText, "base64", "utf8");
-//     decryptedData += decipher.final("utf8");
-//     return decryptedData;
-//   } catch (error) {
-//     console.log(error);
-//     return "";
-//   }
-// }
-
-// async function rsaEncryption(plainText) {
-//   try {
-//     let PUBKEY = fs.readFileSync("public.pem", "utf8");
-
-//     // Encrypting msg with publicEncrypt method
-//     let encmsg = crypto.publicEncrypt(PUBKEY, Buffer.from(plainText, "utf8")).toString("base64");
-
-//     return encmsg;
-//   } catch (error) {
-//     console.log(error);
-//     return "";
-//   }
-// }
-
-// async function rsaDecryption(encryptedText) {
-//   try {
-//     let PRIVKEY = fs.readFileSync("private.pem", "utf8");
-
-//     // Decrypting msg with privateDecrypt method
-//     let plaintext = crypto.privateDecrypt(
-//       {
-//         key: PRIVKEY,
-//         passphrase: "",
-//       },
-//       Buffer.from(encryptedText, "base64")
-//     );
-
-//     return plaintext.toString("utf8");
-//   } catch (error) {
-//     console.log(error);
-//     return "";
-//   }
-// }
 
 if ("undefined" != typeof module) {
   var BBLicense = License;
@@ -390,12 +473,3 @@ if ("undefined" != typeof module) {
 } else {
   var BBLicense = License;
 }
-
-License.init("http://dhdhd.com", "PROPROPRO");
-setTimeout(() => {
-  License.getConfig();
-}, 2000);
-
-setTimeout(() => {
-  License.doExchange();
-}, 3000);

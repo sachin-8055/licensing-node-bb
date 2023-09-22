@@ -33,7 +33,7 @@ router.get("/init", async (req, res, next) => {
     let secretId;
     let platform;
     let deviceId;
-    let IPAddress = address.ip();
+    let ip = address.ip();
     let dateTime = new Date();
     let timeZone = moment.tz.guess();
 
@@ -50,7 +50,7 @@ router.get("/init", async (req, res, next) => {
         productCode,
         deviceId,
         secretId: secretId?.aesKey || "",
-        IPAddress,
+        ip,
         dateTime,
         timeZone,
         licenseKey,

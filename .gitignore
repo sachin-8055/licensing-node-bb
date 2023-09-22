@@ -131,3 +131,4 @@ license/license
 init
 private.pem
 public.pem
+server.pem

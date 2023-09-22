@@ -48,6 +48,59 @@
                     <div class="col col-md-5">
 
                         <div class="col col-md-11 collapse show bg-light pt-2 px-2 " id="sidebar">
+
+                            <ul class="list-group list-group-horizontal">
+                                <li class="list-group-item">STEP 1:</li>
+                                <li class="list-group-item px-1">
+                                    <input type="text" id="licenseKeyField" class="form-control" placeholder="XXXX-XXXX-XXXX">
+                                </li>
+                                <li class="list-group-item">
+                                    <button type="button" class="btn btn-outline-primary" onclick="InitTheApp()">Init()</button>
+                                </li>
+                              </ul>
+
+                              <ul class="list-group list-group-horizontal">
+                                <li class="list-group-item">STEP 2:</li>
+                                <li class="list-group-item px-2">
+                                    <button type="button" class="btn btn-outline-primary" onclick="getSysConfig()">GetConfig()</button>
+                                </li>
+                              </ul>
+
+                              <ul class="list-group list-group-horizontal">
+                                <li class="list-group-item">STEP 3:</li>
+                                <li class="list-group-item px-2">
+                                    <button type="button" class="btn btn-outline-primary" onclick="getLicense()">GetLicense()</button>
+                                </li>
+                              </ul>
+
+                              <ul class="list-group list-group-horizontal">
+                                <li class="list-group-item">STEP 4:</li>
+                                <li class="list-group-item px-1">
+                                    <div class="input-group col">
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input"
+                                                id="license_file_upload">
+                                            <label class="custom-file-label" id="selected_file_name"
+                                                for="license_file_upload">Choose file</label>
+                                        </div>
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-primary" id="upload_new_btn"
+                                                type="button">Upload
+                                                File</button>
+                                        </div>
+                                    </div>
+                                </li>
+                              </ul>
+
+                              <ul class="list-group list-group-horizontal">
+                                <li class="list-group-item">STEP 5:</li>
+                                <li class="list-group-item px-2">
+                                    <button type="button" class="btn btn-outline-primary" onclick="getLicenseDetails()">ExtractandCheckLicense()</button>
+                                </li>
+                              </ul>
+                         
+                              <label class="mt-5"><b>Old Flow</b></label>
+
                             <ul class="nav flex-column flex-nowrap overflow-hidden">
                                 <li class="nav-item">
                                     <a class="nav-link collapsed text-truncate mt-2" href="#submenu1"
@@ -56,10 +109,10 @@
                                             License</span></a>
                                     <div class="collapse m-3" id="submenu1" aria-expanded="false">
                                         <ul class="d-inline-flex-column pl-2  nav">
-                                            <select class="form-select form-select-lg my-2 mx-1" id="productList" onchange="reInitialize()">
+                                            <select class="form-select form-select-lg my-2 mx-1" id="productList" >
 
                                             </select>
-                                            <a type="button" id="get_new_btn" onclick="getNewLicenseKey()"
+                                            <a type="button" id="get_new_btn"
                                                 class=" my-2 mx-1 btn btn-outline-primary btn-lg w-50">Get Key File
                                                 !</a>
                                             <a type="button" id="get_new_btn"
@@ -138,15 +191,15 @@
                         </div>
 
 
-                        <h5 class="text-center"> Your License
-                            <button class="btn btn-outline-info btn-sm m-3" onclick="getLicenseDetails()">View
+                        <!-- <h5 class="text-center"> Your License
+                            <button class="btn btn-outline-info btn-sm m-3">View
                                 License</button>
-                        </h5>
+                        </h5> -->
                         <!-- your content -->
                         <div class="d-flex flex-wrap justify-content-center" id="licenseCardView">
                            
                         </div>
-                        <h5 class="text-center" id="No_licenseCardView"> No License Found, Please upload the license.</h5>
+                        <!-- <h5 class="text-center" id="No_licenseCardView"> No License Found, Please upload the license.</h5> -->
 
                     </div>
                 </div>
