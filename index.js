@@ -252,19 +252,19 @@ const License = (() => {
       _res.result = "Success";
       _res.data = _data;
 
-      if ("function" == typeof callback) {
-        callback(_res);
-      } else {
-        return _res;
-      }
     } catch (error) {
       console.log(error);
       _res.code = -99;
       _res.result = error?.message || "Exception occured : " + error.toString();
     }
+      if ("function" == typeof callback) {
+        callback(_res);
+      } else {
+        return _res;
+      }
   };
 
-  async function generateLicense() {
+  async function getLicense(callback) {
     let _res = { ...defaultResponse };
 
     try {
@@ -331,10 +331,15 @@ const License = (() => {
       _res.code = -99;
       _res.result = error?.message || "Exception occured : " + error.toString();
     }
-    return _res;
+    
+    if ("function" == typeof callback) {
+      callback(_res);
+    } else {
+      return _res;
+    }
   }
 
-  async function extractLicense(filePath) {
+  async function extractLicense(filePath,callback) {
     let _res = { ...defaultResponse };
 
     try {
@@ -394,7 +399,12 @@ const License = (() => {
       _res.code = -99;
       _res.result = error?.message || "Exception occured : " + error.toString();
     }
-    return _res;
+    
+    if ("function" == typeof callback) {
+      callback(_res);
+    } else {
+      return _res;
+    }
   }
 
   setInterval(async function () {
@@ -442,7 +452,7 @@ const License = (() => {
           let _data = responseJson;
           // console.log(_data);
           if (_data?.resultCode > 0) {
-            updateTrace({ isSync: true, dateTime: new Date(), lastSync: new Date() });
+            updateTrace({ isSync: true, dateTime: new Date(), lastSync: new Date(), isActive: true, isExpired: false });
           } else if (_data?.resultCode == -77) {
             updateTrace({ isExpired: true, dateTime: new Date() });
           } else if (_data?.resultCode == -88) {
@@ -454,13 +464,13 @@ const License = (() => {
     } catch (error) {
       console.error("LICENSE Sync ERROR : ", error);
     }
-  }, 15000);
+  }, 20000);
 
   return {
     init,
     doExchange,
     getConfig,
-    generateLicense,
+    getLicense,
     extractLicense,
   };
 })();

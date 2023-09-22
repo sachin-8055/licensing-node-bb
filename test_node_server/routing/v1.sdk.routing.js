@@ -51,7 +51,7 @@ router.post("/init", async (req, res, next) => {
 
 router.get("/generateLicense", async (req, res, next) => {
   try {
-    const result = await BBLicense.generateLicense();
+    const result = await BBLicense.getLicense();
 
     res.status(200).json(result);
   } catch (error) {
