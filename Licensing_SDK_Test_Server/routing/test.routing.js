@@ -209,17 +209,29 @@ router.post("/aesDecrypt", async (req, res, next) => {
       // Reading private key file
       const base64String = data;
       let decryptedData = "";
-      /*
+      
+      const secretKey = secret;
+      
       let aesKey = Buffer.from(secret, "base64");
       const decipher = crypto.createDecipheriv("aes-256-ecb", aesKey, null); // Note the use of null for IV
-      let decryptedData = decipher.update(base64String, "base64", "utf8");
+      decryptedData = decipher.update(base64String, "base64", "utf8");
       decryptedData += decipher.final("utf8");
-      */
+      
 
-      decrypted_bytes = CryptoJS.AES.decrypt(base64String, secret);
-      decryptedData= decrypted_bytes.toString(CryptoJS.enc.Utf8);
 
-      return res.status(200).json({ data: JSON.parse(decryptedData) });
+      // try {
+      //   // const decrypted_bytes = CryptoJS.AES.decrypt(base64String, secretKey);
+
+      //   // console.log({decrypted_bytes});
+
+      //   // decryptedData = decrypted_bytes.toString(CryptoJS.enc.Utf8);
+     
+      // } catch (error) {
+      //   console.log(error);
+      // }
+
+      console.log({ decryptedData });
+      return res.status(200).json({ data: decryptedData });
     } else {
       res.status(200).json({ data: "Data not found..." });
     }

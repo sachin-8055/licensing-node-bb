@@ -452,11 +452,11 @@ const License = (() => {
           let _data = responseJson;
           // console.log(_data);
           if (_data?.resultCode > 0) {
-            updateTrace({ isSync: true, dateTime: new Date(), lastSync: new Date(), isActive: true, isExpired: false });
+            updateTrace({ isSync: true, lastSync: new Date(), isActive: true, isExpired: false });
           } else if (_data?.resultCode == -77) {
-            updateTrace({ isExpired: true, dateTime: new Date() });
+            updateTrace({ isExpired: true, lastSync: new Date() });
           } else if (_data?.resultCode == -88) {
-            updateTrace({ isActive: false, dateTime: new Date() });
+            updateTrace({ isActive: false, lastSync: new Date() });
           } else {
             console.error("Sync ERROR : ", _data);
           }
