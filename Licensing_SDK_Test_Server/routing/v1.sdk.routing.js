@@ -3,6 +3,8 @@ const BBLicense = require("licensing-node-bb");
 const multer = require("multer");
 const fs = require("fs");
 
+const _org_id = "123";
+
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
     let path;
@@ -36,9 +38,17 @@ router.post("/init", async (req, res, next) => {
     const { licenseKey } = req.body;
     const baseUrl = process.env.LICENSE_SERVER_BASE_URL;
 
-    const result = await BBLicense.init(baseUrl, licenseKey);
+    const clientData = {
+      email: "email1@gmail.com",
+      phone: "476256283",
+      userName: "email1",
+      orgId: _org_id,
+      orgName: "org1",
+      serverNameAlias: "ser1",
+    };
+    const result = await BBLicense.init(baseUrl, licenseKey, clientData);
 
-    console.log({result})
+    console.log({ result });
     if (result?.code > 0) {
       res.status(200).json({ resultCode: 1, message: "Success" });
     } else {

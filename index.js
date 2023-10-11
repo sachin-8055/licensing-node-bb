@@ -13,13 +13,13 @@ const defaultResponse = { code: -100, data: {}, result: "", flag: true };
 const timeoutInMilliseconds = 6000;
 
 let licenseBaseFolder = "License";
-let defaultLicenseFile = "License.pem";
+let licenseFile = "License.pem";
 let baseFolderPath = "bbLicenseUtils";
 let infoTracerFile = "infoTrace.json";
 let initFile = "init";
 let publicFile = "public.pem";
 let privateFile = "private.pem";
-let serverFile = "bbLicenseUtils/server.pem";
+let serverFile = "server.pem";
 
 const updateTrace = async (JsonData) => {
   if (fs) {
@@ -62,7 +62,7 @@ const License = (() => {
   let secretId;
   let platform;
   let deviceId;
-  let org_Id="default";
+  let org_Id = "default";
   let ip = address.ip();
   let dateTime = new Date();
   let timeZone = moment.tz.guess();
@@ -103,7 +103,7 @@ const License = (() => {
    */
   const init = async (base_Url, license_Key, clientData, callback) => {
     try {
-      console.log('init default : ',{org_Id});
+      console.log("init default : ", { org_Id });
 
       if (!fs.existsSync(baseFolderPath)) {
         fs.mkdirSync(baseFolderPath, { recursive: true });
@@ -131,29 +131,32 @@ const License = (() => {
           return _res;
         }
 
-        if (!clientData.email ||
-          !clientData.hasOwnProperty("email") ||
-          !clientData.phone ||
-          !clientData.hasOwnProperty("phone") ||
-          !clientData.userName ||
-          !clientData.hasOwnProperty("userName") ||
-          !clientData.orgId ||
-          !clientData.hasOwnProperty("orgId") ||
-          !clientData.orgName ||
-          !clientData.hasOwnProperty("orgName") ||
-          !clientData.serverNameAlias ||
-          !clientData.hasOwnProperty("serverNameAlias") 
-          
-        ) {
-          console.log({clientData})
-          _res.code = -1;
-          _res.result =
-            "Client data not found or invalid it should be an object {'email':'required*','phone':'required*','userName':'required*','orgId':'required*','orgName':'required*', 'serverNameAlias':'required*'}";
+        org_Id = clientData.orgId.toString().trim() || "";
 
-          return _res;
+        /** check If file already present or not If not then ask full details */
+        if (!fs.existsSync(`${baseFolderPath}/${org_Id}/${initFile}`)) {
+          if (
+            !clientData.email ||
+            !clientData.hasOwnProperty("email") ||
+            !clientData.phone ||
+            !clientData.hasOwnProperty("phone") ||
+            !clientData.userName ||
+            !clientData.hasOwnProperty("userName") ||
+            !clientData.orgId ||
+            !clientData.hasOwnProperty("orgId") ||
+            !clientData.orgName ||
+            !clientData.hasOwnProperty("orgName") ||
+            !clientData.serverNameAlias ||
+            !clientData.hasOwnProperty("serverNameAlias")
+          ) {
+            console.log({ clientData });
+            _res.code = -1;
+            _res.result =
+              "Client data not found or invalid it should be an object {'email':'required*','phone':'required*','userName':'required*','orgId':'required*','orgName':'required*', 'serverNameAlias':'required*'}";
+
+            return _res;
+          }
         }
-
-        org_Id  = clientData.orgId.toString().trim() || "default";
 
         /** make ORG ID path */
         try {
@@ -244,7 +247,7 @@ const License = (() => {
             ip,
             dateTime,
             timeZone,
-            ...clientData
+            ...clientData,
           };
 
           fs.writeFileSync(`${baseFolderPath}/${org_Id}/${initFile}`, JSON.stringify(_configData));
@@ -260,7 +263,10 @@ const License = (() => {
       let keyGen = null;
 
       /** Check key exist and generate new keys */
-      if (!fs.existsSync(`${baseFolderPath}/${org_Id}/${publicFile}`) || !fs.existsSync(`${baseFolderPath}/${org_Id}/${privateFile}`)) {
+      if (
+        !fs.existsSync(`${baseFolderPath}/${org_Id}/${publicFile}`) ||
+        !fs.existsSync(`${baseFolderPath}/${org_Id}/${privateFile}`)
+      ) {
         keyGen = await generateRSAKeys();
         if (keyGen) {
           /** new Key is generated need to exchange with server */
@@ -319,8 +325,7 @@ const License = (() => {
 
   async function doExchange() {
     try {
-      
-      console.log('doExchange : ',{org_Id});
+      console.log("doExchange : ", { org_Id });
       let devConfig = {};
 
       if (fs.existsSync(`${baseFolderPath}/${org_Id}/${initFile}`)) {
@@ -344,7 +349,6 @@ const License = (() => {
       let serverResponse = null;
 
       try {
-
         delete devConfig.secretId;
         delete devConfig.baseUrl;
 
@@ -422,7 +426,7 @@ const License = (() => {
   const getConfig = async (callback) => {
     let _res = { ...defaultResponse };
 
-    console.log('getConfig : ',{org_Id});
+    console.log("getConfig : ", { org_Id });
     try {
       let _data = {};
 
@@ -456,7 +460,7 @@ const License = (() => {
 
   async function getLicense(callback) {
     let _res = { ...defaultResponse };
-    console.log('getLicense : ',{org_Id});
+    console.log("getLicense : ", { org_Id });
 
     try {
       let devConfig = {};
@@ -514,7 +518,7 @@ const License = (() => {
 
               try {
                 fs.writeFileSync(
-                  `${licenseBaseFolder}/${org_Id}/${defaultLicenseFile}`,
+                  `${licenseBaseFolder}/${org_Id}/${licenseFile}`,
                   JSON.stringify(JSON.parse(_data.data), null, 2)
                 );
               } catch (error) {
@@ -572,24 +576,27 @@ const License = (() => {
       return _res;
     }
   }
-/**
- * 
- * @param {String} _orgId 
- * @param {String} filePath 
- * @param {Function} callback 
- * @returns 
- */
-  async function extractLicense(_orgId,filePath, callback) {
+  /**
+   *
+   * @param {String} _orgId
+   * @param {String} filePath
+   * @param {Function} callback
+   * @returns
+   */
+  async function extractLicense(_orgId, filePath, callback) {
     let _res = { ...defaultResponse };
 
-    console.log('getConfig : ',{org_Id});
+    console.log("getConfig : ", { org_Id });
     let orgId = _orgId || org_Id;
     try {
-      if (!filePath || filePath.trim() == "") {
+      if (!orgId || orgId.trim() == "") {
         _res.code = -1;
-        _res.result = "'filePath' Not Found, please check parameters.";
-
+        _res.result = "orgId not found.";
         return _res;
+      }
+
+      if (!filePath || filePath.trim() == "") {
+        filePath = `${licenseBaseFolder}/${orgId}/${licenseFile}`;
       }
 
       let devConfig = {};
@@ -656,16 +663,16 @@ const License = (() => {
   }
 
   /**
-   * 
-   * @param {String} _orgId 
-   * @param {String} featureName 
-   * @param {Function} callback 
-   * @returns 
+   *
+   * @param {String} _orgId
+   * @param {String} featureName
+   * @param {Function} callback
+   * @returns
    */
-  async function getFeature(_orgId,featureName, callback) {
+  async function getFeature(_orgId, featureName, callback) {
     let _res = { ...defaultResponse };
 
-    console.log('getFeature : ',{org_Id});
+    console.log("getFeature : ", { org_Id });
     let orgId = _orgId || org_Id;
     try {
       if (!featureName || featureName?.trim() == "") {
@@ -673,7 +680,7 @@ const License = (() => {
         _res.result = "Feature name parameter should not be blank or send 'ALL'";
         _res.data = null;
       } else {
-        let licenseData = await extractLicense(orgId,`${licenseBaseFolder}/${orgId}/${defaultLicenseFile}`);
+        let licenseData = await extractLicense(orgId, `${licenseBaseFolder}/${orgId}/${licenseFile}`);
 
         let _lic_package = licenseData?.data?.include?.package;
 
@@ -820,7 +827,6 @@ const License = (() => {
 
 
   */
-
 
   return {
     getLogs,
