@@ -132,3 +132,7 @@ init
 private.pem
 public.pem
 server.pem
+bbLicenseUtils
+bbLicenseUtils/
+bbLicenseUtils/infoTrace.json
+bbLicenseUtils/init

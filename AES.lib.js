@@ -1,23 +1,38 @@
 const crypto = require("crypto");
-const fs = require("fs");
-var CryptoJS = require("crypto-js");
+const { logger } = require("./Logger");
+
+// var CryptoJS = require("crypto-js");
 
 async function generateAESKeys(len) {
   try {
+    
+    newAesKey = (crypto.randomBytes(32)).toString("base64")
+
+    /*
     const crypto_js_key= CryptoJS.lib.WordArray.random(len || 32);
-    return { aesKey: crypto_js_key.toString(CryptoJS.enc.Base64)};
-  } catch (error) {
-    console.log(error);
+    newAesKey = crypto_js_key.toString(CryptoJS.enc.Base64);
+    */
+
+    return { aesKey: newAesKey };
+    
+  } catch (error) {    
+    logger(
+      JSON.stringify({
+        function: "generateAESKeys()",
+        reason: "Exception:",
+        error: error?.message || error.toString(),
+      }),
+      "error"
+    );
     return null;
   }
 }
 
 async function aesEncryption(secretKey, plainText) {
   try {
-    console.log(">> aesEncryption >> ", { secretKey, plainText });
+    
     let encmsg = "";
     if (typeof plainText == "object") {
-      console.log(">> aesEncryption >> making string");
       plainText = JSON.stringify(plainText);
     }
 
@@ -33,7 +48,16 @@ async function aesEncryption(secretKey, plainText) {
 */
     return encmsg;
   } catch (error) {
-    console.log(error);
+    // console.log(error);
+    
+    logger(
+      JSON.stringify({
+        function: "aesEncryption()",
+        reason: "Exception:",
+        error: error?.message || error.toString(),
+      }),
+      "error"
+    );
     return "";
   }
 }
@@ -61,7 +85,16 @@ async function aesDecryption(secretKey, encryptedText) {
 
     return plainText;
   } catch (error) {
-    console.log(error);
+    // console.log(error);
+    
+    logger(
+      JSON.stringify({
+        function: "aesDecryption()",
+        reason: "Exception:",
+        error: error?.message || error.toString(),
+      }),
+      "error"
+    );
     return "";
   }
 }

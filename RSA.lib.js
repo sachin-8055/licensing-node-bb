@@ -1,8 +1,9 @@
-const crypto = require("crypto");
+// const crypto = require("crypto");
 const fs = require("fs");
 const forge = require("node-forge");
+const { logger } = require("./Logger");
 
-const productKeyFilePath = process.cwd() + "/" + process.env.PRIVATE_KEY_PATH;
+const productKeyFilePath = "./ProdKey";
 
 const forgeKeyCreationOptions = {
   bits: 2048,
@@ -16,7 +17,7 @@ async function generateRSAKeys(clientId) {
     const publicKey = forge.pki.publicKeyToPem(keys.publicKey);
 
     if (clientId && clientId.trim() != "") {
-      const filePath = productKeyFilePath + clientId;
+      const filePath = productKeyFilePath + clientId || "";
 
       if (!fs.existsSync(filePath)) {
         fs.mkdirSync(filePath, { recursive: true });
@@ -26,11 +27,28 @@ async function generateRSAKeys(clientId) {
       fs.writeFileSync(filePath + "/public.pem", publicKey);
 
       console.log("Product Keys Generated and Saved.");
+
+      logger(
+        JSON.stringify({
+          function: "generateRSAKeys()",
+          reason: "Product Keys Generated and Saved."
+        }),
+        "success"
+      );
+
     }
 
     return { privateKey, publicKey };
-  } catch (error) {
-    console.log(error);
+  } catch (error) {    
+    logger(
+      JSON.stringify({
+        function: "generateRSAKeys()",
+        reason: "Exception:",
+        error: error?.message || error.toString(),
+      }),
+      "error"
+    );
+
     return null;
   }
 }
@@ -58,7 +76,15 @@ async function rsaEncryption(keyFilePath, plainText) {
 
     return encmsg;
   } catch (error) {
-    console.log(error);
+    
+    logger(
+      JSON.stringify({
+        function: "rsaEncryption()",
+        reason: "Exception:",
+        error: error?.message || error.toString(),
+      }),
+      "error"
+    );
     return "";
   }
 }
@@ -94,7 +120,15 @@ async function rsaDecryption(keyFilePath, encryptedText) {
 
     return plainText;
   } catch (error) {
-    console.log(error);
+    
+    logger(
+      JSON.stringify({
+        function: "rsaDecryption()",
+        reason: "Exception: Product Keys Generate",
+        error: error?.message || error.toString(),
+      }),
+      "error"
+    );
     return "";
   }
 }
