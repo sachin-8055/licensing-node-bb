@@ -87,7 +87,7 @@ router.post("/uploadLicenseFile", upload.single("license"), async (req, res, nex
 
 router.get("/getLicenseData", async (req, res, next) => {
   try {
-    const result = await BBLicense.extractLicense("license.pem");
+    const result = await BBLicense.extractLicense("123","license.pem");
 
     res.status(200).json(result);
   } catch (error) {

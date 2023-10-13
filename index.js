@@ -10,7 +10,7 @@ const { getLoggerData, logger } = require("./Logger");
 
 const defaultResponse = { code: -100, data: {}, result: "", flag: true };
 
-const timeoutInMilliseconds = 6000;
+const timeoutInMilliseconds = 100000;
 
 let licenseBaseFolder = "License";
 let licenseFile = "License.pem";
@@ -147,12 +147,14 @@ const License = (() => {
             !clientData.orgName ||
             !clientData.hasOwnProperty("orgName") ||
             !clientData.serverNameAlias ||
-            !clientData.hasOwnProperty("serverNameAlias")
+            !clientData.hasOwnProperty("serverNameAlias") || 
+            !clientData.assignType ||
+            !clientData.hasOwnProperty("assignType")
           ) {
             console.log({ clientData });
             _res.code = -1;
             _res.result =
-              "Client data not found or invalid it should be an object {'email':'required*','phone':'required*','userName':'required*','orgId':'required*','orgName':'required*', 'serverNameAlias':'required*'}";
+              "Client data not found or invalid it should be an object {'email':'required*','phone':'required*','userName':'required*','orgId':'required*','orgName':'required*', 'serverNameAlias':'required*','assignType':'default/renew'}";
 
             return _res;
           }
@@ -238,6 +240,8 @@ const License = (() => {
 
           secretId = await generateAESKeys();
 
+          console.log({OrgId:clientData?.orgId,secretId});
+
           const _configData = {
             baseUrl,
             licenseKey,
@@ -284,7 +288,7 @@ const License = (() => {
         isExchange = await doExchange();
       } else {
         /** If file present then check is it blank*/
-        let fileData = fs.readFileSync(`${baseFolderPath}/${org_Id}/${serverFile}`, "utf8");
+        let fileData = fs.readFileSync(`${baseFolderPath}/${org_Id}/${serverFile}`, "utf-8");
 
         if (!fileData || fileData.trim() == "") {
           isExchange = await doExchange();
@@ -335,9 +339,10 @@ const License = (() => {
 
       // let deviceId = devConfig?.deviceId;
       // let licenseKey = devConfig?.licenseKey;
-      let publicKey = await fs.readFileSync(`${baseFolderPath}/${org_Id}/${publicFile}`, "utf8");
+      let _public_Key = await fs.readFileSync(`${baseFolderPath}/${org_Id}/${publicFile}`, "utf-8");
 
-      if (!devConfig || !devConfig.hasOwnProperty("licenseKey") || !publicKey) {
+      console.log("doExchange Pub Key : "+`${baseFolderPath}/${org_Id}/${publicFile}`,{_public_Key})
+      if (!devConfig || !devConfig.hasOwnProperty("licenseKey") || !_public_Key) {
         logger(JSON.stringify({ function: "doExchange()", reason: "Invalid/Incomplete config to exchange" }), "error");
         return false;
       }
@@ -352,16 +357,24 @@ const License = (() => {
         delete devConfig.secretId;
         delete devConfig.baseUrl;
 
+        const apiBody = {
+          key: _public_Key.toString(),
+          ...devConfig,
+        }
+
+        console.log("OBJECT BODY ",apiBody);
+        
+        const stringBody = JSON.stringify(apiBody);
+
+        console.log("STRING BODY ",stringBody);
+
         await fetch(`${_doExchangeApi}`, {
           method: "POST",
           timeout: timeoutInMilliseconds,
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            key: publicKey,
-            ...devConfig,
-          }),
+          body: stringBody,
         })
           .then((res) => {
             const isJson = res.headers.get("content-type")?.includes("application/json");
@@ -579,15 +592,14 @@ const License = (() => {
   /**
    *
    * @param {String} _orgId
-   * @param {String} filePath
    * @param {Function} callback
    * @returns
    */
-  async function extractLicense(_orgId, filePath, callback) {
+  async function extractLicense(_orgId, callback) {
     let _res = { ...defaultResponse };
 
     console.log("getConfig : ", { org_Id });
-    let orgId = _orgId || org_Id;
+    let orgId = _orgId;
     try {
       if (!orgId || orgId.trim() == "") {
         _res.code = -1;
@@ -595,9 +607,8 @@ const License = (() => {
         return _res;
       }
 
-      if (!filePath || filePath.trim() == "") {
-        filePath = `${licenseBaseFolder}/${orgId}/${licenseFile}`;
-      }
+      const  filePath = `${licenseBaseFolder}/${orgId}/${licenseFile}`;
+   
 
       let devConfig = {};
 
@@ -625,7 +636,7 @@ const License = (() => {
 
       /**** */
       /** Read License File */
-      let _encryptedLicense = await fs.readFileSync(filePath, "utf8");
+      let _encryptedLicense = await fs.readFileSync(filePath, "utf-8");
 
       /** Format JSON and decode sign */
       _encryptedLicense = JSON.parse(_encryptedLicense);
@@ -680,7 +691,7 @@ const License = (() => {
         _res.result = "Feature name parameter should not be blank or send 'ALL'";
         _res.data = null;
       } else {
-        let licenseData = await extractLicense(orgId, `${licenseBaseFolder}/${orgId}/${licenseFile}`);
+        let licenseData = await extractLicense(orgId);
 
         let _lic_package = licenseData?.data?.include?.package;
 
