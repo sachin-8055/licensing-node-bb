@@ -5,7 +5,14 @@ let loggerFile = "bbLicenseUtils/logger.json";
 
 async function logger(data = "", type = "default") {
   try {
-    if (type != "default" && type != "success" && type != "error" && type != "info" && type != "sync" && type != "syncError") {
+    if (
+      type != "default" &&
+      type != "success" &&
+      type != "error" &&
+      type != "info" &&
+      type != "sync" &&
+      type != "syncError"
+    ) {
       return;
     }
     if (fs && data && data != "") {
@@ -32,7 +39,7 @@ async function logger(data = "", type = "default") {
         let _updatedData = {
           default: [],
           success: [],
-          info:[],
+          info: [],
           error: [],
           sync: {},
           syncError: [],
@@ -51,6 +58,10 @@ async function logger(data = "", type = "default") {
 
         fs.writeFileSync(`${loggerFile}`, JSON.stringify(_updatedData, null, 2));
       }
+    }
+
+    if (type != "default" && type != "info" && type != "sync") {
+      console.log(`BBL SDK LOG : ${type.toUpperCase()} : `, data);
     }
   } catch (error) {
     console.log(error);
