@@ -93,14 +93,21 @@ const License = (() => {
     return _res;
   };
 
-  const updateLicense = async (license_Key, org_Id) => {
+  /**
+   * 
+   * @param {String} [license_Key=""] 
+   * @param {String} [org_Id=""] 
+   * @param {String} [assignType="default"]
+   * @returns 
+   */
+  const updateLicense = async (license_Key, org_Id, assignType) => {
+    let _res = { ...defaultResponse };
     try {
       console.log(`updateLicense : KEY:${license_Key} : ORG:${org_Id}`);
 
       if (!license_Key || !org_Id) {
         _res.code = -1;
-        _res.result =
-          "license_Key & org_Id can't be null | blank.";
+        _res.result = "license_Key & org_Id can't be null | blank.";
 
         return _res;
       }
@@ -108,60 +115,49 @@ const License = (() => {
       let orgInitFile = `${baseFolderPath}/${org_Id}/${initFile}`;
 
       if (fs.existsSync(orgInitFile)) {
-        
         let fileData = fs.readFileSync(orgInitFile, "utf-8");
         const parseData = JSON.parse(fileData);
 
-        if (parseData.licenseKey != license_Key) {
-          parseData.licenseKey = license_Key;
-          parseData.dateTime = new Date();
+        parseData.assignType == license_Key.toString().trim()?"default":assignType;
 
-          
-          const res_init = async (parseData?.baseUrl, license_Key, parseData);
-          console.log("updateLicense == ",{res_init});
+        parseData.licenseKey = license_Key;
+        parseData.dateTime = new Date();
 
-          _res.code = 1;
-          _res.data = parseData;
-          _res.result = "Success";
+        _res.code = 1;
+        _res.data = parseData;
+        _res.result = "Success";
 
-        }
-
-
+        const res_init = await init(parseData?.baseUrl, license_Key, parseData);
+        console.log("updateLicense == ", { res_init });
       } else {
-
         _res.code = -1;
         _res.data = null;
         _res.result = "No exiting init file found please do initialise client using init()";
-
       }
-
 
       return _res;
+    } catch (error) {
+      console.log("SDK EXCEPTION :> ", error);
+      logger(
+        JSON.stringify({
+          function: "updateLicense()",
+          reason: "Exception",
+          error: error?.message || error.toString(),
+        }),
+        "error"
+      );
 
+      _res.code = -99;
+      _res.result = error?.message || "Exception occured : " + error.toString();
+    }
+  };
 
-     } catch (error) {
-        console.log("SDK EXCEPTION :> ", error);
-        logger(
-          JSON.stringify({
-            function: "updateLicense()",
-            reason: "Exception",
-            error: error?.message || error.toString(),
-          }),
-          "error"
-        );
-  
-        _res.code = -99;
-        _res.result = error?.message || "Exception occured : " + error.toString();
-      }
-  }
-
-  const removeInitFiles = async (org_Id,reason="init()") =>{
+  const removeInitFiles = async (org_Id, reason = "init()") => {
     console.log(`removeInitFiles : for:${reason} : ORG:${org_Id}`);
 
     if (!org_Id) {
       _res.code = -1;
-      _res.result =
-        "org_Id can't be null | blank.";
+      _res.result = "org_Id can't be null | blank.";
 
       return _res;
     }
@@ -170,7 +166,6 @@ const License = (() => {
     let orgPrivateFile = `${baseFolderPath}/${org_Id}/${privateFile}`;
     let orgServerFile = `${baseFolderPath}/${org_Id}/${serverFile}`;
 
-    
     try {
       if (fs.existsSync(orgPublicFile)) {
         logger(
@@ -185,7 +180,7 @@ const License = (() => {
       if (fs.existsSync(orgPrivateFile)) {
         logger(
           JSON.stringify({
-            function:  `${reason || "init()"}`,
+            function: `${reason || "init()"}`,
             reason: `Deleting file :${orgPrivateFile} : due to license key change.`,
           }),
           "info"
@@ -195,7 +190,7 @@ const License = (() => {
       if (fs.existsSync(orgServerFile)) {
         logger(
           JSON.stringify({
-            function:  `${reason || "init()"}`,
+            function: `${reason || "init()"}`,
             reason: `Deleting file :${orgServerFile} : due to license key change.`,
           }),
           "info"
@@ -206,7 +201,7 @@ const License = (() => {
       console.log("SDK EXCEPTION :> ", error);
       logger(
         JSON.stringify({
-          function:  `${reason || "init()"}`,
+          function: `${reason || "init()"}`,
           reason: "Existing file deletion exception",
           error: error?.message || error.toString(),
         }),
@@ -215,13 +210,12 @@ const License = (() => {
     }
 
     return true;
-
-  }
+  };
   /**
    *
-   * @param {String} base_Url @default "" @description Licensing server base URL
-   * @param {String} license_Key @default ""
-   * @param {Object} clientData @default ""
+   * @param {String} [base_Url=""] Licensing server base URL
+   * @param {String} [license_Key=""]
+   * @param {Object} [clientData=""]
    * @returns
    */
   const init = async (base_Url, license_Key, clientData) => {
@@ -268,11 +262,10 @@ const License = (() => {
             !clientData.orgName ||
             !clientData.hasOwnProperty("orgName") ||
             !clientData.serverNameAlias ||
-            !clientData.hasOwnProperty("serverNameAlias") || 
+            !clientData.hasOwnProperty("serverNameAlias") ||
             !clientData.assignType ||
             !clientData.hasOwnProperty("assignType")
           ) {
-            
             _res.code = -1;
             _res.result =
               "Client data not found or invalid it should be an object {'email':'required*','phone':'required*','userName':'required*','orgId':'required*','orgName':'required*', 'serverNameAlias':'required*','assignType':'default/renew'}";
@@ -305,11 +298,9 @@ const License = (() => {
             fs.writeFileSync(`${baseFolderPath}/${org_Id}/${initFile}`, JSON.stringify(parseData));
 
             try {
-
-              await removeInitFiles(org_Id,"init()");
-
+              await removeInitFiles(org_Id, "init()");
             } catch (error) {
-              console.log("EXCEPTION removeInitFiles :> ", error);              
+              console.log("EXCEPTION removeInitFiles :> ", error);
             }
           }
 
@@ -368,13 +359,15 @@ const License = (() => {
         }
       }
 
-      let licenseFileAndData = fs.existsSync(`${baseFolderPath}/${org_Id}/${serverFile}`)?fs.readFileSync(`${baseFolderPath}/${org_Id}/${serverFile}`, "utf-8"):null;
+      let licenseFileAndData = fs.existsSync(`${baseFolderPath}/${org_Id}/${serverFile}`)
+        ? fs.readFileSync(`${baseFolderPath}/${org_Id}/${serverFile}`, "utf-8")
+        : null;
 
       if (!licenseFileAndData || !fs.existsSync(`${licenseBaseFolder}/${org_Id}/${licenseFile}`)) {
         /** If file not present */
         isExchange = await doExchange();
-      } 
-      
+      }
+
       // else {
       //   /** If file present then check is it blank*/
       //   let fileData = fs.readFileSync(`${baseFolderPath}/${org_Id}/${serverFile}`, "utf-8");
@@ -384,15 +377,13 @@ const License = (() => {
       //   }
       // }
 
-    
-        if (isExchange && isExchange?.resultCode < 0) {
-          _res.code = -1;
-          _res.data = null;
-          _res.result = isExchange?.message;
-        }
+      if (isExchange && isExchange?.resultCode < 0) {
+        _res.code = -1;
+        _res.data = null;
+        _res.result = isExchange?.message;
+      }
 
-        return _res;
-    
+      return _res;
     } catch (error) {
       console.log("SDK EXCEPTION :> ", error);
       logger(
@@ -441,9 +432,8 @@ const License = (() => {
         const apiBody = {
           key: _public_Key.toString(),
           ...devConfig,
-        }
+        };
 
-        
         const stringBody = JSON.stringify(apiBody);
 
         await fetch(`${_doExchangeApi}`, {
@@ -478,7 +468,7 @@ const License = (() => {
               fs.writeFileSync(`${baseFolderPath}/${org_Id}/${serverFile}`, _data?.data || "");
 
               /** After successfull exchange getLicense and save */
-              getLicense();
+              getLicense(org_Id);
             } else {
               logger(JSON.stringify({ function: "doExchange()", server_res: _data }), "error");
 
@@ -514,15 +504,18 @@ const License = (() => {
     }
   }
 
-  const getConfig = async () => {
+  const getConfig = async (_orgId) => {
     let _res = { ...defaultResponse };
 
-    console.log("getConfig : ", { org_Id });
+    let _org_Id = _orgId || org_Id;
+
+    console.log("getConfig : ", { _org_Id });
+
     try {
       let _data = {};
 
-      if (fs.existsSync(`${baseFolderPath}/${org_Id}/${initFile}`)) {
-        let fileData = fs.readFileSync(`${baseFolderPath}/${org_Id}/${initFile}`, "utf-8");
+      if (fs.existsSync(`${baseFolderPath}/${_org_Id}/${initFile}`)) {
+        let fileData = fs.readFileSync(`${baseFolderPath}/${_org_Id}/${initFile}`, "utf-8");
         _data = JSON.parse(fileData);
       }
       _res.code = 1;
@@ -542,25 +535,27 @@ const License = (() => {
       _res.code = -99;
       _res.result = error?.message || "Exception occured : " + error.toString();
     }
-  
-      return _res;
-    
+
+    return _res;
   };
 
-  async function getLicense() {
+  async function getLicense(_orgId) {
     let _res = { ...defaultResponse };
-    console.log("getLicense : ", { org_Id });
+
+    let _org_Id = _orgId || org_Id;
+
+    console.log("getLicense : ", { _org_Id });
 
     try {
       let devConfig = {};
 
-      if (fs.existsSync(`${baseFolderPath}/${org_Id}/${initFile}`)) {
-        let fileData = fs.readFileSync(`${baseFolderPath}/${org_Id}/${initFile}`, "utf-8");
+      if (fs.existsSync(`${baseFolderPath}/${_org_Id}/${initFile}`)) {
+        let fileData = fs.readFileSync(`${baseFolderPath}/${_org_Id}/${initFile}`, "utf-8");
         devConfig = JSON.parse(fileData);
       }
 
       const _clientEncryptedData = await aesEncryption(devConfig?.secretId, devConfig);
-      const _clientKeyData = await rsaEncryption(`${baseFolderPath}/${org_Id}/${serverFile}`, devConfig?.secretId);
+      const _clientKeyData = await rsaEncryption(`${baseFolderPath}/${_org_Id}/${serverFile}`, devConfig?.secretId);
 
       const licenseServerAPI = `${devConfig.baseUrl}/sdk/api/generateLicense`;
 
@@ -607,7 +602,7 @@ const License = (() => {
 
               try {
                 fs.writeFileSync(
-                  `${licenseBaseFolder}/${org_Id}/${licenseFile}`,
+                  `${licenseBaseFolder}/${_org_Id}/${licenseFile}`,
                   JSON.stringify(JSON.parse(_data.data), null, 2)
                 );
               } catch (error) {
@@ -659,34 +654,32 @@ const License = (() => {
       _res.result = error?.message || "Exception occured : " + error.toString();
     }
 
-   
-      return _res;
-    
+    return _res;
   }
   /**
    *
-   * @param {String} _orgId
+   * @param {String} [_orgId=""]
    * @returns
    */
   async function extractLicense(_orgId) {
     let _res = { ...defaultResponse };
 
-    console.log("getConfig : ", { org_Id });
-    let orgId = _orgId;
+    let _org_Id = _orgId || org_Id;
+
+    console.log("getConfig : ", { _org_Id });
     try {
-      if (!orgId || orgId.trim() == "") {
+      if (!_org_Id || _org_Id.trim() == "") {
         _res.code = -1;
         _res.result = "orgId not found.";
         return _res;
       }
 
-      const  filePath = `${licenseBaseFolder}/${orgId}/${licenseFile}`;
-   
+      const filePath = `${licenseBaseFolder}/${_org_Id}/${licenseFile}`;
 
       // let devConfig = {};
 
-      // if (fs.existsSync(`${baseFolderPath}/${orgId}/${initFile}`)) {
-      //   let fileData = fs.readFileSync(`${baseFolderPath}/${orgId}/${initFile}`, "utf-8");
+      // if (fs.existsSync(`${baseFolderPath}/${_org_Id}/${initFile}`)) {
+      //   let fileData = fs.readFileSync(`${baseFolderPath}/${_org_Id}/${initFile}`, "utf-8");
       //   devConfig = JSON.parse(fileData);
       // }
       /** Check tracing first is it expired or not active (trace sync from server) */
@@ -714,7 +707,7 @@ const License = (() => {
       /** Format JSON and decode sign */
       _encryptedLicense = JSON.parse(_encryptedLicense);
 
-      const decodedSign = await rsaDecryption(`${baseFolderPath}/${orgId}/${privateFile}`, _encryptedLicense?.sign);
+      const decodedSign = await rsaDecryption(`${baseFolderPath}/${_org_Id}/${privateFile}`, _encryptedLicense?.sign);
 
       /** after success of sign decode uste decoded sign and do 'enc' decryption using AES */
       let decodedLicense = await aesDecryption(decodedSign, _encryptedLicense?.enc);
@@ -739,29 +732,29 @@ const License = (() => {
       _res.result = error?.message || "Exception occured : " + error.toString();
     }
 
-  
-      return _res;
-    
+    return _res;
   }
 
   /**
    *
-   * @param {String} _orgId
-   * @param {String} featureName
+   * @param {String} [_orgId=""]
+   * @param {String} [featureName=""]
    * @returns
    */
   async function getFeature(_orgId, featureName) {
     let _res = { ...defaultResponse };
 
-    console.log("getFeature : ", { org_Id });
-    let orgId = _orgId || org_Id;
+    let _org_Id = _orgId || org_Id;
+
+    console.log("getFeature : ", { _org_Id });
+
     try {
       if (!featureName || featureName?.trim() == "") {
         _res.code = 1;
         _res.result = "Feature name parameter should not be blank or send 'ALL'";
         _res.data = null;
       } else {
-        let licenseData = await extractLicense(orgId);
+        let licenseData = await extractLicense(_org_Id);
 
         let _lic_package = licenseData?.data?.include?.package;
 
@@ -803,9 +796,7 @@ const License = (() => {
       _res.result = error?.message || "Exception occured : " + error.toString();
     }
 
-    
-      return _res;
-    
+    return _res;
   }
 
   /*
@@ -927,8 +918,4 @@ if ("undefined" != typeof module) {
 } else {
   var BBLicense = License;
 }
-/*
-let d = License.init("https://veri5now.axiomprotect.com:3011", "chhgdd-sdsddw-wddcdw",{'email':'required*','phone':'required*','userName':'required*','orgId':'required','orgName':'required*', 'serverNameAlias':'required*'});
-console.log(d);
 
-*/
