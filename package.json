@@ -1,6 +1,6 @@
 {
   "name": "licensing-node-bb",
-  "version": "3.2.5",
+  "version": "3.2.6",
   "description": "SDK to create license for any project.",
   "main": "index.js",
   "scripts": {

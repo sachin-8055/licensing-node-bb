@@ -94,11 +94,11 @@ const License = (() => {
   };
 
   /**
-   * 
-   * @param {String} [license_Key=""] 
-   * @param {String} [org_Id=""] 
+   *
+   * @param {String} [license_Key=""]
+   * @param {String} [org_Id=""]
    * @param {String} [assignType="default"]
-   * @returns 
+   * @returns
    */
   const updateLicense = async (license_Key, org_Id, assignType) => {
     let _res = { ...defaultResponse };
@@ -118,9 +118,10 @@ const License = (() => {
         let fileData = fs.readFileSync(orgInitFile, "utf-8");
         const parseData = JSON.parse(fileData);
 
-        parseData.assignType == license_Key.toString().trim()?"default":assignType;
+        parseData.assignType == license_Key.toString().trim() ? "default" : assignType;
 
         parseData.licenseKey = license_Key;
+        parseData.orgId = org_Id.toString().trim();
         parseData.dateTime = new Date();
 
         _res.code = 1;
@@ -230,7 +231,7 @@ const License = (() => {
       console.log("SDK EXCEPTION older Creation Exception:> ", error);
     }
     let _res = { ...defaultResponse };
-    let isExchange = null;
+    let isExchange = false;
 
     logger(JSON.stringify({ function: "init()", base_Url, license_Key }));
 
@@ -355,7 +356,8 @@ const License = (() => {
 
           logger("New Client Keys Are generated");
 
-          isExchange = await doExchange();
+          // isExchange = await doExchange();
+          isExchange = true;
         }
       }
 
@@ -365,7 +367,8 @@ const License = (() => {
 
       if (!licenseFileAndData || !fs.existsSync(`${licenseBaseFolder}/${org_Id}/${licenseFile}`)) {
         /** If file not present */
-        isExchange = await doExchange();
+        // isExchange = await doExchange();
+        isExchange = true;
       }
 
       // else {
@@ -377,7 +380,9 @@ const License = (() => {
       //   }
       // }
 
-      if (isExchange && isExchange?.resultCode < 0) {
+      const _isExchange_res = isExchange ? await doExchange() : null;
+
+      if (isExchange && _isExchange_res?.resultCode < 0) {
         _res.code = -1;
         _res.data = null;
         _res.result = isExchange?.message;
@@ -668,7 +673,7 @@ const License = (() => {
 
     console.log("getConfig : ", { _org_Id });
     try {
-      if (!_org_Id || _org_Id.trim() == "") {
+      if (!_org_Id || _org_Id.toString().trim() == "") {
         _res.code = -1;
         _res.result = "orgId not found.";
         return _res;
@@ -918,4 +923,3 @@ if ("undefined" != typeof module) {
 } else {
   var BBLicense = License;
 }
-
