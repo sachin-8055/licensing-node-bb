@@ -464,6 +464,8 @@ const License = (() => {
                 }),
                 "error"
               );
+
+              serverResponse={resultCode: -1,message:"Unable to connect to license server for exchange."}
             }
           })
           .then((responseJson) => {
@@ -474,7 +476,7 @@ const License = (() => {
 
               /** After successfull exchange getLicense and save */
               getLicense(org_Id);
-            } else {
+            } else if (_data){
               logger(JSON.stringify({ function: "doExchange()", server_res: _data }), "error");
               console.log(" Exchange _data :",_data);
               serverResponse = _data;

@@ -7,4 +7,7 @@ node_modules/
 .gitattributes
 veri5now
 public
-test_node_server/
+Licensing_SDK_Test_Server/
+Licensing_SDK_Test_Server
+bbLicenseUtils
+bbLicenseUtils/
