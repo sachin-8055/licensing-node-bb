@@ -385,7 +385,7 @@ const License = (() => {
       if (isExchange && _isExchange_res?.resultCode < 0) {
         _res.code = -1;
         _res.data = null;
-        _res.result = isExchange?.message;
+        _res.result = isExchange?.message || _isExchange_res?.message;
       }
 
       return _res;
@@ -476,7 +476,7 @@ const License = (() => {
               getLicense(org_Id);
             } else {
               logger(JSON.stringify({ function: "doExchange()", server_res: _data }), "error");
-
+              console.log(" Exchange _data :",_data);
               serverResponse = _data;
             }
           });

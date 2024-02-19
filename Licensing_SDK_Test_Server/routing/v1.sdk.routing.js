@@ -3,7 +3,7 @@ const BBLicense = require("licensing-node-bb");
 const multer = require("multer");
 const fs = require("fs");
 
-const _org_id = "123";
+const _org_id = "12354333";
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -39,13 +39,15 @@ router.post("/init", async (req, res, next) => {
     const baseUrl = process.env.LICENSE_SERVER_BASE_URL;
 
     const clientData = {
-      email: "email1@gmail.com",
-      phone: "476256283",
-      userName: "email1",
+      email: "email13e@gmail.com",
+      phone: "47625628343",
+      userName: "email13e",
       orgId: _org_id,
-      orgName: "org1",
-      serverNameAlias: "ser1",
+      orgName: "org13e",
+      serverNameAlias: "ser13e",
+      assignType:'default'
     };
+    console.log({clientData})
     const result = await BBLicense.init(baseUrl, licenseKey, clientData);
 
     console.log({ result });
@@ -87,7 +89,7 @@ router.post("/uploadLicenseFile", upload.single("license"), async (req, res, nex
 
 router.get("/getLicenseData", async (req, res, next) => {
   try {
-    const result = await BBLicense.extractLicense("123","license.pem");
+    const result = await BBLicense.extractLicense(_org_id);
 
     res.status(200).json(result);
   } catch (error) {
